@@ -550,6 +550,42 @@ function drawShape(context, location, radius, fill, stroke = null) {
   }
 }
 
+function getLocatorVisual() {
+  if (!state.selected || state.activeMode !== 'explore') return null;
+  const now = performance.now();
+  const animating = now < state.locatorUntil;
+  const progress = animating ? Math.min(1, (now - state.locatorStartedAt) / (state.locatorUntil - state.locatorStartedAt)) : 1;
+  const eased = 1 - ((1 - progress) ** 3);
+  const finalRadius = 10 / state.view.scale;
+  return {
+    location: state.selected,
+    animating,
+    eased,
+    radius: 42 + (finalRadius - 42) * eased
+  };
+}
+
+function drawLocatorCrosshair(context, locator) {
+  const { location, radius } = locator;
+  const gap = radius + 5 / state.view.scale;
+  context.save();
+  context.beginPath();
+  context.moveTo(location.px, 0);
+  context.lineTo(location.px, Math.max(0, location.py - gap));
+  context.moveTo(location.px, Math.min(2048, location.py + gap));
+  context.lineTo(location.px, 2048);
+  context.moveTo(0, location.py);
+  context.lineTo(Math.max(0, location.px - gap), location.py);
+  context.moveTo(Math.min(2048, location.px + gap), location.py);
+  context.lineTo(2048, location.py);
+  context.strokeStyle = 'rgba(242,245,66,.88)';
+  context.lineWidth = 1.75 / state.view.scale;
+  context.shadowColor = 'rgba(2,7,13,.95)';
+  context.shadowBlur = 3 / state.view.scale;
+  context.stroke();
+  context.restore();
+}
+
 function draw() {
   state.lastFrame = 0;
   const dpr = Number(canvas.dataset.dpr || 1);
@@ -607,6 +643,9 @@ function draw() {
     ctx.restore();
   }
 
+  const locator = getLocatorVisual();
+  if (locator) drawLocatorCrosshair(ctx, locator);
+
   const labelThreshold = state.view.scale > .72 ? (state.view.scale > 1.35 ? 2 : 0) : -1;
   const selectedId = state.selected?.id;
   for (const location of state.locations) {
@@ -646,20 +685,14 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  if (state.selected && state.activeMode === 'explore') {
-    const p = state.selected;
-    const now = performance.now();
-    const animating = now < state.locatorUntil;
-    const progress = animating ? Math.min(1, (now - state.locatorStartedAt) / (state.locatorUntil - state.locatorStartedAt)) : 1;
-    const eased = 1 - ((1 - progress) ** 3);
-    const finalRadius = 10 / state.view.scale;
-    const locatorRadius = 42 + (finalRadius - 42) * eased;
+  if (locator) {
+    const { location: p, radius: locatorRadius, eased, animating } = locator;
     ctx.beginPath();
     ctx.arc(p.px, p.py, locatorRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ff4157';
+    ctx.strokeStyle = 'rgb(242,245,66)';
     ctx.lineWidth = 2 / state.view.scale;
     ctx.globalAlpha = .55 + eased * .45;
-    ctx.shadowColor = '#ff4157';
+    ctx.shadowColor = 'rgb(242,245,66)';
     ctx.shadowBlur = 13 / state.view.scale;
     ctx.stroke();
     ctx.shadowBlur = 0;
