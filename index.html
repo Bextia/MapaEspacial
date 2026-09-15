@@ -10,136 +10,156 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand" aria-label="Atlas galáctico">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <div><strong>ATLAS GALÁCTICO</strong><span>Archivo cartográfico interactivo</span></div>
+      <div class="brand-cluster">
+        <div class="brand" aria-label="Atlas galáctico" data-i18n-aria-label="brand.aria">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div><strong data-i18n="brand.title">ATLAS GALÁCTICO</strong><span data-i18n="brand.subtitle">Archivo cartográfico interactivo</span></div>
+        </div>
+        <div class="language-switch" role="group" aria-label="Idioma / Language">
+          <button class="active" type="button" data-locale="es" aria-pressed="true">ES</button>
+          <button type="button" data-locale="en" aria-pressed="false">EN</button>
+        </div>
       </div>
       <div class="catalog-status" id="catalogStatus"><span class="status-dot"></span>Cargando catálogo…</div>
-      <button class="mobile-panel-button" id="mobilePanelButton" type="button" aria-label="Abrir panel">☰</button>
+      <button class="mobile-panel-button" id="mobilePanelButton" type="button" aria-label="Abrir panel" data-i18n-aria-label="mobile.openPanel">☰</button>
     </header>
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-scroll">
-        <section class="mode-switch" aria-label="Modo de uso">
-          <button class="mode-button active" data-mode="explore" type="button">Explorar</button>
-          <button class="mode-button" data-mode="route" type="button">Calcular ruta</button>
+        <section class="mode-switch" aria-label="Modo de uso" data-i18n-aria-label="mode.aria">
+          <button class="mode-button active" data-mode="explore" type="button" data-i18n="mode.explore">Explorar</button>
+          <button class="mode-button" data-mode="route" type="button" data-i18n="mode.route">Calcular ruta</button>
         </section>
 
         <section class="panel-section" id="explorePanel">
-          <label class="field-label" for="planetSearch">Buscar localización</label>
+          <label class="field-label" for="planetSearch" data-i18n="explore.searchLabel">Buscar localización</label>
           <div class="search-wrap">
             <span class="search-icon" aria-hidden="true">⌕</span>
-            <input id="planetSearch" autocomplete="off" placeholder="Ej. Coruscant, Lothal, Kessel…">
-            <button class="clear-search" id="clearSearch" type="button" aria-label="Limpiar búsqueda">×</button>
+            <input id="planetSearch" autocomplete="off" placeholder="Ej. Coruscant, Lothal, Kessel…" data-i18n-placeholder="explore.searchPlaceholder">
+            <button class="clear-search" id="clearSearch" type="button" aria-label="Limpiar búsqueda" data-i18n-aria-label="explore.clearSearch">×</button>
             <div class="suggestions" id="searchSuggestions" role="listbox"></div>
           </div>
 
-          <div class="quick-grid">
-            <button class="quick-card" data-planet="Coruscant" type="button"><span>Origen</span><strong>Coruscant</strong></button>
-            <button class="quick-card" data-planet="Lothal" type="button"><span>Borde Exterior</span><strong>Lothal</strong></button>
-            <button class="quick-card" data-planet="Kessel" type="button"><span>Enclave</span><strong>Kessel</strong></button>
-          </div>
-
           <details class="filter-box" open>
-            <summary>Capas y filtros <span id="filterCount">Todos</span></summary>
+            <summary><span class="summary-label" data-i18n="filters.title">Capas y filtros</span> <span id="filterCount" data-i18n="filters.all">Todos</span></summary>
             <div class="filter-content">
-              <div class="toggle-row">
-                <label class="toggle"><input id="showRoutes" type="checkbox" checked><span></span>Hiperrutas</label>
-                <label class="toggle"><input id="crossingsOnly" type="checkbox"><span></span>Solo cruces</label>
+              <p class="mini-label" data-i18n="filters.mapLayers">Capas del mapa</p>
+              <div class="toggle-row layer-toggle-row">
+                <label class="toggle"><input id="showGridLayer" data-map-layer="grid" type="checkbox" checked><span></span><b data-i18n="filters.grid">Cuadrícula</b></label>
+                <label class="toggle"><input id="showRegionsLayer" data-map-layer="regions" type="checkbox" checked><span></span><b data-i18n="filters.regions">Regiones</b></label>
+                <label class="toggle"><input id="showHyperroutesLayer" data-map-layer="hyperroutes" type="checkbox" checked><span></span><b data-i18n="filters.hyperroutes">Hiperrutas</b></label>
               </div>
-              <p class="mini-label">Tipo de localización</p>
+              <div class="toggle-row filter-toggle-row">
+                <label class="toggle"><input id="crossingsOnly" type="checkbox"><span></span><b data-i18n="filters.crossingsOnly">Solo cruces</b></label>
+              </div>
+              <p class="mini-label" data-i18n="filters.locationType">Tipo de localización</p>
               <div class="chip-row" id="typeFilters">
-                <button class="filter-chip active" data-type="all" type="button">Todos</button>
-                <button class="filter-chip" data-type="planet" type="button"><i class="shape shape-circle"></i>Planeta / sistema</button>
-                <button class="filter-chip" data-type="station" type="button"><i class="shape shape-square"></i>Estación</button>
-                <button class="filter-chip" data-type="misc" type="button"><i class="shape shape-diamond"></i>Miscelánea</button>
+                <button class="filter-chip active" data-type="all" type="button" data-i18n="filters.all">Todos</button>
+                <button class="filter-chip" data-type="planet" type="button"><i class="shape shape-circle"></i><span data-i18n="type.planet">Planeta / sistema</span></button>
+                <button class="filter-chip" data-type="station" type="button"><i class="shape shape-square"></i><span data-i18n="type.stationShort">Estación</span></button>
+                <button class="filter-chip" data-type="misc" type="button"><i class="shape shape-diamond"></i><span data-i18n="type.misc">Miscelánea</span></button>
               </div>
-              <label class="field-label compact" for="regionFilter">Región</label>
-              <select id="regionFilter"><option value="all">Todas las regiones</option></select>
+              <label class="field-label compact" for="regionFilter" data-i18n="filters.region">Región</label>
+              <select id="regionFilter"><option value="all" data-i18n="filters.allRegions">Todas las regiones</option></select>
             </div>
           </details>
 
           <details class="coordinate-box">
-            <summary>Ir a coordenadas <span>píxeles</span></summary>
+            <summary><span class="summary-label" data-i18n="coords.title">Ir a coordenadas</span> <span data-i18n="coords.pixels">píxeles</span></summary>
             <div class="coordinate-fields">
               <label>X <input id="coordX" type="number" min="0" max="2048" placeholder="1030"></label>
               <label>Y <input id="coordY" type="number" min="0" max="2048" placeholder="863"></label>
-              <button id="goCoords" type="button">Centrar</button>
+              <button id="goCoords" type="button" data-i18n="coords.center">Centrar</button>
             </div>
           </details>
         </section>
 
         <section class="panel-section hidden" id="routePanel">
-          <div class="route-heading"><span>TRAZADOR DE HIPERRUTAS</span><h2>Planifica un trayecto</h2><p>Prioriza corredores cartografiados y señala por separado los enlaces locales necesarios.</p></div>
-          <label class="field-label" for="routeFrom">Origen</label>
-          <div class="search-wrap route-search">
+          <div class="route-heading"><span data-i18n="route.eyebrow">TRAZADOR DE HIPERRUTAS</span><h2 data-i18n="route.title">Planifica un trayecto</h2><p data-i18n="route.description">Escribe un nombre o activa un campo y pulsa directamente un marcador del mapa.</p></div>
+          <label class="field-label" for="routeFrom" data-i18n="route.origin">Origen</label>
+          <div class="search-wrap route-search" id="routeFromWrap">
             <span class="route-marker from">A</span>
-            <input id="routeFrom" autocomplete="off" placeholder="Planeta de salida">
+            <input id="routeFrom" autocomplete="off" placeholder="Planeta de salida" data-i18n-placeholder="route.originPlaceholder">
+            <button class="map-pick-button" data-route-pick="from" type="button" aria-label="Elegir origen en el mapa" title="Elegir en el mapa" data-i18n-aria-label="route.pickOrigin" data-i18n-title="route.pickOnMap">⌖</button>
             <div class="suggestions" id="fromSuggestions" role="listbox"></div>
           </div>
-          <button class="swap-button" id="swapRoute" type="button" aria-label="Intercambiar origen y destino">⇅</button>
-          <label class="field-label" for="routeTo">Destino</label>
-          <div class="search-wrap route-search">
+          <button class="swap-button" id="swapRoute" type="button" aria-label="Intercambiar origen y destino" data-i18n-aria-label="route.swap">⇅</button>
+          <label class="field-label" for="routeTo" data-i18n="route.destination">Destino</label>
+          <div class="search-wrap route-search" id="routeToWrap">
             <span class="route-marker to">B</span>
-            <input id="routeTo" autocomplete="off" placeholder="Planeta de destino">
+            <input id="routeTo" autocomplete="off" placeholder="Planeta de destino" data-i18n-placeholder="route.destinationPlaceholder">
+            <button class="map-pick-button" data-route-pick="to" type="button" aria-label="Elegir destino en el mapa" title="Elegir en el mapa" data-i18n-aria-label="route.pickDestination" data-i18n-title="route.pickOnMap">⌖</button>
             <div class="suggestions" id="toSuggestions" role="listbox"></div>
           </div>
-          <button class="primary-button" id="calculateRoute" type="button">Calcular ruta</button>
+          <p class="route-pick-note" id="routePickNote" data-i18n="route.pickNote">Pulsa un campo para elegir ese punto en el mapa.</p>
+          <div class="hyperdrive-control">
+            <div class="hyperdrive-heading">
+              <label for="hyperdriveClass" data-i18n="route.hyperdriveLabel">Clase del hipermotor</label>
+              <output id="hyperdriveValue" for="hyperdriveClass">Clase 1</output>
+            </div>
+            <input id="hyperdriveClass" type="range" min="0.5" max="5" step="0.5" value="1" aria-describedby="hyperdriveHelp">
+            <div class="range-labels" aria-hidden="true"><span data-i18n="route.fast">0,5 · muy rápido</span><span data-i18n="route.slow">5 · lento</span></div>
+            <p id="hyperdriveHelp" data-i18n="route.hyperdriveHelp">Una clase menor reduce el tiempo de viaje.</p>
+          </div>
+          <div class="route-actions">
+            <button class="primary-button" id="calculateRoute" type="button" data-i18n="route.calculate">Calcular ruta</button>
+            <button class="secondary-button" id="clearRoute" type="button" data-i18n="route.clear">Limpiar</button>
+          </div>
           <div class="route-result hidden" id="routeResult"></div>
         </section>
 
         <section class="detail-card empty" id="detailCard" aria-live="polite">
           <div class="empty-state">
             <div class="orbit-icon" aria-hidden="true"><span></span></div>
-            <h2>Selecciona una localización</h2>
-            <p>Busca por nombre o pulsa cualquier marcador del mapa para abrir su ficha.</p>
+            <h2 data-i18n="empty.title">Selecciona una localización</h2>
+            <p data-i18n="empty.body">Busca por nombre o pulsa cualquier marcador del mapa para abrir su ficha.</p>
           </div>
         </section>
       </div>
       <footer class="sidebar-footer">
-        <a href="./data/galactic-locations.csv" download>Descargar catálogo CSV</a>
-        <button id="aboutButton" type="button">Acerca de los datos</button>
+        <button id="aboutButton" type="button" data-i18n="footer.about">Acerca de los datos</button>
       </footer>
     </aside>
 
     <main class="map-stage" id="mapStage">
-      <canvas id="galaxyCanvas" aria-label="Mapa galáctico interactivo"></canvas>
-      <div class="map-tools" aria-label="Controles del mapa">
-        <button id="zoomIn" type="button" aria-label="Acercar">+</button>
-        <button id="zoomOut" type="button" aria-label="Alejar">−</button>
-        <button id="fitMap" type="button" aria-label="Ver mapa completo">⌂</button>
+      <canvas id="galaxyCanvas" aria-label="Mapa galáctico interactivo" data-i18n-aria-label="map.aria"></canvas>
+      <div class="map-tools" aria-label="Controles del mapa" data-i18n-aria-label="map.controls">
+        <button id="zoomIn" type="button" aria-label="Acercar" data-i18n-aria-label="map.zoomIn">+</button>
+        <button id="zoomOut" type="button" aria-label="Alejar" data-i18n-aria-label="map.zoomOut">−</button>
+        <button id="fitMap" type="button" aria-label="Ver mapa completo" data-i18n-aria-label="map.fit">⌂</button>
       </div>
       <div class="legend" id="legend">
-        <div class="legend-head"><strong>LEYENDA</strong><button id="legendToggle" type="button" aria-label="Ocultar leyenda">−</button></div>
+        <div class="legend-head"><strong data-i18n="legend.title">LEYENDA</strong><button id="legendToggle" type="button" aria-label="Ocultar leyenda" data-i18n-aria-label="legend.toggle">−</button></div>
         <div class="legend-body">
-          <div><i class="shape shape-circle"></i>Planeta / sistema</div>
-          <div><i class="shape shape-square"></i>Estación</div>
-          <div><i class="shape shape-diamond"></i>Miscelánea</div>
-          <div><i class="route-line"></i>Hiperruta registrada</div>
-          <div><i class="crossing-symbol"></i>Cruce de rutas</div>
+          <div><i class="shape shape-circle"></i><span data-i18n="type.planet">Planeta / sistema</span></div>
+          <div><i class="shape shape-square"></i><span data-i18n="type.stationShort">Estación</span></div>
+          <div><i class="shape shape-diamond"></i><span data-i18n="type.misc">Miscelánea</span></div>
+          <div><i class="route-line"></i><span data-i18n="legend.registeredRoute">Hiperruta registrada</span></div>
+          <div><i class="crossing-symbol"></i><span data-i18n="legend.crossing">Cruce de rutas</span></div>
         </div>
       </div>
       <div class="coordinate-readout" id="coordinateReadout">px —, —</div>
       <div class="map-tooltip" id="mapTooltip" role="tooltip"></div>
-      <div class="map-hint" id="mapHint">Arrastra para mover · Rueda para ampliar · Pulsa un marcador para abrir su ficha</div>
+      <div class="map-hint" id="mapHint" data-i18n="map.hint">Arrastra para mover · Rueda para ampliar · Pulsa un marcador para abrir su ficha</div>
     </main>
   </div>
 
   <dialog id="aboutDialog">
-    <button class="dialog-close" id="closeAbout" type="button" aria-label="Cerrar">×</button>
-    <span class="eyebrow">FUENTES Y ALCANCE</span>
-    <h2>Sobre este prototipo</h2>
-    <p>La imagen base y sus coordenadas se mantienen en un lienzo de 2048 × 2048 píxeles con origen en la esquina superior izquierda.</p>
-    <p>El catálogo cartográfico procede del conjunto de datos asociado al mapa de referencia. Las hiperrutas enlazan sus paradas en el orden registrado. Cuando dos redes no comparten parada, el planificador utiliza una transferencia local claramente identificada y penalizada.</p>
-    <p>La distinción entre planetas, estaciones y elementos misceláneos se deriva del nombre del elemento, porque el conjunto de origen no incluye esa clasificación explícita. Las consultas de Wookieepedia se muestran dentro del propio visor.</p>
-    <p>Fuente de datos: Wason1797/StarWarsMap.</p>
+    <button class="dialog-close" id="closeAbout" type="button" aria-label="Cerrar" data-i18n-aria-label="common.close">×</button>
+    <span class="eyebrow" data-i18n="about.eyebrow">FUENTES Y ALCANCE</span>
+    <h2 data-i18n="about.title">Sobre este prototipo</h2>
+    <p data-i18n="about.p1">La imagen base, creada por Shane Sw5W (@StarWars5W en Twitter), y sus coordenadas se mantienen en un lienzo de 2048 × 2048 píxeles con origen en la esquina superior izquierda.</p>
+    <p data-i18n="about.p2">El catálogo cartográfico procede del conjunto de datos asociado al mapa de referencia. Las hiperrutas enlazan sus paradas en el orden registrado. Cuando dos redes no comparten parada, el planificador utiliza una transferencia local claramente identificada y penalizada.</p>
+    <p data-i18n="about.p3">Las distancias se estiman sobre la Cuadrícula Galáctica Estándar: 1 cuadrícula equivale a 1.500 pársecs y 1 pársec a 3,26 años luz. El tiempo aplica la clase del hipermotor a una base de 8 horas por cuadrícula en rutas mayores, 16 en rutas ordinarias, 24 en el Borde Exterior y regiones inexploradas, y un intervalo de 24–48 horas en el Núcleo Profundo.</p>
+    <p data-i18n="about.p4">La distinción entre planetas, estaciones y elementos misceláneos se deriva del nombre del elemento, porque el conjunto de origen no incluye esa clasificación explícita. Las consultas de Wookieepedia se muestran dentro del propio visor.</p>
+    <p data-i18n="about.source">Fuente de datos: Wason1797/StarWarsMap.</p>
     <div class="dialog-actions">
-      <a href="./data/galactic-locations.csv" download>Descargar CSV</a>
+      <a href="./data/galactic-locations.csv" download data-i18n="about.download">Descargar CSV</a>
     </div>
   </dialog>
 
   <dialog id="wikiDialog" class="wiki-dialog">
-    <button class="dialog-close" id="closeWiki" type="button" aria-label="Cerrar">×</button>
+    <button class="dialog-close" id="closeWiki" type="button" aria-label="Cerrar" data-i18n-aria-label="common.close">×</button>
     <div id="wikiModalContent" class="wiki-modal-content" aria-live="polite"></div>
   </dialog>
 
