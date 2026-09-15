@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>Atlas galáctico interactivo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Atlas galáctico">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div><strong>ATLAS GALÁCTICO</strong><span>Archivo cartográfico interactivo</span></div>
+      </div>
+      <div class="catalog-status" id="catalogStatus"><span class="status-dot"></span>Cargando catálogo…</div>
+      <button class="mobile-panel-button" id="mobilePanelButton" type="button" aria-label="Abrir panel">☰</button>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-scroll">
+        <section class="mode-switch" aria-label="Modo de uso">
+          <button class="mode-button active" data-mode="explore" type="button">Explorar</button>
+          <button class="mode-button" data-mode="route" type="button">Calcular ruta</button>
+        </section>
+
+        <section class="panel-section" id="explorePanel">
+          <label class="field-label" for="planetSearch">Buscar localización</label>
+          <div class="search-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="planetSearch" autocomplete="off" placeholder="Ej. Coruscant, Lothal, Kessel…">
+            <button class="clear-search" id="clearSearch" type="button" aria-label="Limpiar búsqueda">×</button>
+            <div class="suggestions" id="searchSuggestions" role="listbox"></div>
+          </div>
+
+          <div class="quick-grid">
+            <button class="quick-card" data-planet="Coruscant" type="button"><span>Origen</span><strong>Coruscant</strong></button>
+            <button class="quick-card" data-planet="Lothal" type="button"><span>Borde Exterior</span><strong>Lothal</strong></button>
+            <button class="quick-card" data-planet="Kessel" type="button"><span>Enclave</span><strong>Kessel</strong></button>
+          </div>
+
+          <details class="filter-box" open>
+            <summary>Capas y filtros <span id="filterCount">Todos</span></summary>
+            <div class="filter-content">
+              <div class="toggle-row">
+                <label class="toggle"><input id="showRoutes" type="checkbox" checked><span></span>Hiperrutas</label>
+                <label class="toggle"><input id="crossingsOnly" type="checkbox"><span></span>Solo cruces</label>
+              </div>
+              <p class="mini-label">Tipo de localización</p>
+              <div class="chip-row" id="typeFilters">
+                <button class="filter-chip active" data-type="all" type="button">Todos</button>
+                <button class="filter-chip" data-type="planet" type="button"><i class="shape shape-circle"></i>Planeta / sistema</button>
+                <button class="filter-chip" data-type="station" type="button"><i class="shape shape-square"></i>Estación</button>
+                <button class="filter-chip" data-type="misc" type="button"><i class="shape shape-diamond"></i>Miscelánea</button>
+              </div>
+              <label class="field-label compact" for="regionFilter">Región</label>
+              <select id="regionFilter"><option value="all">Todas las regiones</option></select>
+            </div>
+          </details>
+
+          <details class="coordinate-box">
+            <summary>Ir a coordenadas <span>píxeles</span></summary>
+            <div class="coordinate-fields">
+              <label>X <input id="coordX" type="number" min="0" max="2048" placeholder="1030"></label>
+              <label>Y <input id="coordY" type="number" min="0" max="2048" placeholder="863"></label>
+              <button id="goCoords" type="button">Centrar</button>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel-section hidden" id="routePanel">
+          <div class="route-heading"><span>TRAZADOR DE HIPERRUTAS</span><h2>Planifica un trayecto</h2><p>Prioriza corredores cartografiados y señala por separado los enlaces locales necesarios.</p></div>
+          <label class="field-label" for="routeFrom">Origen</label>
+          <div class="search-wrap route-search">
+            <span class="route-marker from">A</span>
+            <input id="routeFrom" autocomplete="off" placeholder="Planeta de salida">
+            <div class="suggestions" id="fromSuggestions" role="listbox"></div>
+          </div>
+          <button class="swap-button" id="swapRoute" type="button" aria-label="Intercambiar origen y destino">⇅</button>
+          <label class="field-label" for="routeTo">Destino</label>
+          <div class="search-wrap route-search">
+            <span class="route-marker to">B</span>
+            <input id="routeTo" autocomplete="off" placeholder="Planeta de destino">
+            <div class="suggestions" id="toSuggestions" role="listbox"></div>
+          </div>
+          <button class="primary-button" id="calculateRoute" type="button">Calcular ruta</button>
+          <div class="route-result hidden" id="routeResult"></div>
+        </section>
+
+        <section class="detail-card empty" id="detailCard" aria-live="polite">
+          <div class="empty-state">
+            <div class="orbit-icon" aria-hidden="true"><span></span></div>
+            <h2>Selecciona una localización</h2>
+            <p>Busca por nombre o pulsa cualquier marcador del mapa para abrir su ficha.</p>
+          </div>
+        </section>
+      </div>
+      <footer class="sidebar-footer">
+        <a href="./data/galactic-locations.csv" download>Descargar catálogo CSV</a>
+        <button id="aboutButton" type="button">Acerca de los datos</button>
+      </footer>
+    </aside>
+
+    <main class="map-stage" id="mapStage">
+      <canvas id="galaxyCanvas" aria-label="Mapa galáctico interactivo"></canvas>
+      <div class="map-tools" aria-label="Controles del mapa">
+        <button id="zoomIn" type="button" aria-label="Acercar">+</button>
+        <button id="zoomOut" type="button" aria-label="Alejar">−</button>
+        <button id="fitMap" type="button" aria-label="Ver mapa completo">⌂</button>
+      </div>
+      <div class="legend" id="legend">
+        <div class="legend-head"><strong>LEYENDA</strong><button id="legendToggle" type="button" aria-label="Ocultar leyenda">−</button></div>
+        <div class="legend-body">
+          <div><i class="shape shape-circle"></i>Planeta / sistema</div>
+          <div><i class="shape shape-square"></i>Estación</div>
+          <div><i class="shape shape-diamond"></i>Miscelánea</div>
+          <div><i class="route-line"></i>Hiperruta registrada</div>
+          <div><i class="crossing-symbol"></i>Cruce de rutas</div>
+        </div>
+      </div>
+      <div class="coordinate-readout" id="coordinateReadout">px —, —</div>
+      <div class="map-tooltip" id="mapTooltip" role="tooltip"></div>
+      <div class="map-hint" id="mapHint">Arrastra para mover · Rueda para ampliar · Pulsa un marcador para abrir su ficha</div>
+    </main>
+  </div>
+
+  <dialog id="aboutDialog">
+    <button class="dialog-close" id="closeAbout" type="button" aria-label="Cerrar">×</button>
+    <span class="eyebrow">FUENTES Y ALCANCE</span>
+    <h2>Sobre este prototipo</h2>
+    <p>La imagen base y sus coordenadas se mantienen en un lienzo de 2048 × 2048 píxeles con origen en la esquina superior izquierda.</p>
+    <p>El catálogo cartográfico procede del conjunto de datos asociado al mapa de referencia. Las hiperrutas enlazan sus paradas en el orden registrado. Cuando dos redes no comparten parada, el planificador utiliza una transferencia local claramente identificada y penalizada.</p>
+    <p>La distinción entre planetas, estaciones y elementos misceláneos se deriva del nombre del elemento, porque el conjunto de origen no incluye esa clasificación explícita. Las consultas de Wookieepedia se muestran dentro del propio visor.</p>
+    <p>Fuente de datos: Wason1797/StarWarsMap.</p>
+    <div class="dialog-actions">
+      <a href="./data/galactic-locations.csv" download>Descargar CSV</a>
+    </div>
+  </dialog>
+
+  <dialog id="wikiDialog" class="wiki-dialog">
+    <button class="dialog-close" id="closeWiki" type="button" aria-label="Cerrar">×</button>
+    <div id="wikiModalContent" class="wiki-modal-content" aria-live="polite"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
