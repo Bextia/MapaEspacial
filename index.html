@@ -46,18 +46,17 @@
               <p class="mini-label" data-i18n="filters.mapLayers">Capas del mapa</p>
               <div class="toggle-row layer-toggle-row">
                 <label class="toggle"><input id="showGridLayer" data-map-layer="grid" type="checkbox" checked><span></span><b data-i18n="filters.grid">Cuadrícula</b></label>
-                <label class="toggle"><input id="showRegionsLayer" data-map-layer="regions" type="checkbox" checked><span></span><b data-i18n="filters.regions">Regiones</b></label>
                 <label class="toggle"><input id="showHyperroutesLayer" data-map-layer="hyperroutes" type="checkbox" checked><span></span><b data-i18n="filters.hyperroutes">Hiperrutas</b></label>
-              </div>
-              <div class="toggle-row filter-toggle-row">
-                <label class="toggle"><input id="crossingsOnly" type="checkbox"><span></span><b data-i18n="filters.crossingsOnly">Solo cruces</b></label>
+                <label class="toggle"><input id="showRegionsLayer" data-map-layer="regions" type="checkbox" checked><span></span><b data-i18n="filters.regions">Regiones</b></label>
+                <label class="toggle"><input id="showSectorsLayer" data-map-layer="sectors" type="checkbox" checked><span></span><b data-i18n="filters.sectors">Sectores</b></label>
+                <label class="toggle"><input id="showPlanetsLayer" data-map-layer="planets" type="checkbox" checked><span></span><b data-i18n="filters.planets">Planetas</b></label>
               </div>
               <p class="mini-label" data-i18n="filters.locationType">Tipo de localización</p>
               <div class="chip-row" id="typeFilters">
                 <button class="filter-chip active" data-type="all" type="button" data-i18n="filters.all">Todos</button>
-                <button class="filter-chip" data-type="planet" type="button"><i class="shape shape-circle"></i><span data-i18n="type.planet">Planeta / sistema</span></button>
-                <button class="filter-chip" data-type="station" type="button"><i class="shape shape-square"></i><span data-i18n="type.stationShort">Estación</span></button>
-                <button class="filter-chip" data-type="misc" type="button"><i class="shape shape-diamond"></i><span data-i18n="type.misc">Miscelánea</span></button>
+                <button class="filter-chip" data-type="planet" type="button"><span class="key-symbol" aria-hidden="true">●</span><span data-i18n="type.planet">Planeta / sistema</span></button>
+                <button class="filter-chip" data-type="station" type="button"><span class="key-symbol" aria-hidden="true">¤</span><span data-i18n="type.stationShort">Estación</span></button>
+                <button class="filter-chip" data-type="misc" type="button"><span class="key-symbol" aria-hidden="true">§</span><span data-i18n="type.misc">Miscelánea</span></button>
               </div>
               <label class="field-label compact" for="regionFilter" data-i18n="filters.region">Región</label>
               <select id="regionFilter"><option value="all" data-i18n="filters.allRegions">Todas las regiones</option></select>
@@ -67,8 +66,8 @@
           <details class="coordinate-box">
             <summary><span class="summary-label" data-i18n="coords.title">Ir a coordenadas</span> <span data-i18n="coords.pixels">píxeles</span></summary>
             <div class="coordinate-fields">
-              <label>X <input id="coordX" type="number" min="0" max="2048" placeholder="1030"></label>
-              <label>Y <input id="coordY" type="number" min="0" max="2048" placeholder="863"></label>
+              <label>X <input id="coordX" type="number" min="0" max="4320" placeholder="2160"></label>
+              <label>Y <input id="coordY" type="number" min="0" max="4320" placeholder="2160"></label>
               <button id="goCoords" type="button" data-i18n="coords.center">Centrar</button>
             </div>
           </details>
@@ -128,16 +127,6 @@
         <button id="zoomOut" type="button" aria-label="Alejar" data-i18n-aria-label="map.zoomOut">−</button>
         <button id="fitMap" type="button" aria-label="Ver mapa completo" data-i18n-aria-label="map.fit">⌂</button>
       </div>
-      <div class="legend" id="legend">
-        <div class="legend-head"><strong data-i18n="legend.title">LEYENDA</strong><button id="legendToggle" type="button" aria-label="Ocultar leyenda" data-i18n-aria-label="legend.toggle">−</button></div>
-        <div class="legend-body">
-          <div><i class="shape shape-circle"></i><span data-i18n="type.planet">Planeta / sistema</span></div>
-          <div><i class="shape shape-square"></i><span data-i18n="type.stationShort">Estación</span></div>
-          <div><i class="shape shape-diamond"></i><span data-i18n="type.misc">Miscelánea</span></div>
-          <div><i class="route-line"></i><span data-i18n="legend.registeredRoute">Hiperruta registrada</span></div>
-          <div><i class="crossing-symbol"></i><span data-i18n="legend.crossing">Cruce de rutas</span></div>
-        </div>
-      </div>
       <div class="coordinate-readout" id="coordinateReadout">px —, —</div>
       <div class="map-tooltip" id="mapTooltip" role="tooltip"></div>
       <div class="map-hint" id="mapHint" data-i18n="map.hint">Arrastra para mover · Rueda para ampliar · Pulsa un marcador para abrir su ficha</div>
@@ -148,14 +137,11 @@
     <button class="dialog-close" id="closeAbout" type="button" aria-label="Cerrar" data-i18n-aria-label="common.close">×</button>
     <span class="eyebrow" data-i18n="about.eyebrow">FUENTES Y ALCANCE</span>
     <h2 data-i18n="about.title">Sobre este prototipo</h2>
-    <p data-i18n="about.p1">La imagen base, creada por Shane Sw5W (@StarWars5W en Twitter), y sus coordenadas se mantienen en un lienzo de 2048 × 2048 píxeles con origen en la esquina superior izquierda.</p>
+    <p data-i18n="about.p1">El mapa base, creado por Shane Sw5W (@StarWars5W en Twitter), se compone en un lienzo de 4320 × 4320 píxeles con origen en la esquina superior izquierda.</p>
     <p data-i18n="about.p2">El catálogo cartográfico procede del conjunto de datos asociado al mapa de referencia. Las hiperrutas enlazan sus paradas en el orden registrado. Cuando dos redes no comparten parada, el planificador utiliza una transferencia local claramente identificada y penalizada.</p>
     <p data-i18n="about.p3">Las distancias se estiman sobre la Cuadrícula Galáctica Estándar: 1 cuadrícula equivale a 1.500 pársecs y 1 pársec a 3,26 años luz. El tiempo aplica la clase del hipermotor a una base de 8 horas por cuadrícula en rutas mayores, 16 en rutas ordinarias, 24 en el Borde Exterior y regiones inexploradas, y un intervalo de 24–48 horas en el Núcleo Profundo.</p>
-    <p data-i18n="about.p4">La distinción entre planetas, estaciones y elementos misceláneos se deriva del nombre del elemento, porque el conjunto de origen no incluye esa clasificación explícita. Las consultas de Wookieepedia se muestran dentro del propio visor.</p>
+    <p data-i18n="about.p4">La distinción entre planetas, estaciones y elementos misceláneos procede de los símbolos del SVG. Las localizaciones presentes en el mapa usan sus coordenadas extraídas; las restantes conservan las del catálogo. Las consultas de Wookieepedia se muestran dentro del propio visor.</p>
     <p data-i18n="about.source">Fuente de datos: Wason1797/StarWarsMap.</p>
-    <div class="dialog-actions">
-      <a href="./data/galactic-locations.csv" download data-i18n="about.download">Descargar CSV</a>
-    </div>
   </dialog>
 
   <dialog id="wikiDialog" class="wiki-dialog">

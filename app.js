@@ -2,6 +2,8 @@ import { calculateLegMetrics } from './route-math.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
+const MAP_SIZE = 4320;
+const MAP_FONT = '"Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow", Arial, sans-serif';
 
 const translations = {
   es: {
@@ -22,7 +24,8 @@ const translations = {
     'filters.grid': 'Cuadrícula',
     'filters.regions': 'Regiones',
     'filters.hyperroutes': 'Hiperrutas',
-    'filters.crossingsOnly': 'Solo cruces',
+    'filters.sectors': 'Sectores',
+    'filters.planets': 'Planetas',
     'filters.locationType': 'Tipo de localización',
     'filters.all': 'Todos',
     'filters.region': 'Región',
@@ -78,10 +81,6 @@ const translations = {
     'map.fit': 'Ver mapa completo',
     'map.hint': 'Arrastra para mover · Rueda para ampliar · Pulsa un marcador para abrir su ficha',
     'map.outside': 'fuera del mapa',
-    'legend.title': 'LEYENDA',
-    'legend.toggle': 'Ocultar o mostrar leyenda',
-    'legend.registeredRoute': 'Hiperruta registrada',
-    'legend.crossing': 'Cruce de rutas',
     'type.planet': 'Planeta / sistema',
     'type.station': 'Estación espacial',
     'type.stationShort': 'Estación',
@@ -114,17 +113,16 @@ const translations = {
     'wiki.errorBody': 'Wookieepedia no ha permitido recuperar ahora el resumen de <strong>{name}</strong>. Puedes intentarlo de nuevo más tarde o cambiar de idioma.',
     'about.eyebrow': 'FUENTES Y ALCANCE',
     'about.title': 'Sobre este prototipo',
-    'about.p1': 'La imagen base, creada por Shane Sw5W (@StarWars5W en Twitter), y sus coordenadas se mantienen en un lienzo de 2048 × 2048 píxeles con origen en la esquina superior izquierda.',
+    'about.p1': 'El mapa base, creado por Shane Sw5W (@StarWars5W en Twitter), se compone en un lienzo de 4320 × 4320 píxeles con origen en la esquina superior izquierda.',
     'about.p2': 'El catálogo cartográfico procede del conjunto de datos asociado al mapa de referencia. Las hiperrutas enlazan sus paradas en el orden registrado. Cuando dos redes no comparten parada, el planificador utiliza una transferencia local claramente identificada y penalizada.',
     'about.p3': 'Las distancias se estiman sobre la Cuadrícula Galáctica Estándar: 1 cuadrícula equivale a 1.500 pársecs y 1 pársec a 3,26 años luz. El tiempo aplica la clase del hipermotor a una base de 8 horas por cuadrícula en rutas mayores, 16 en rutas ordinarias, 24 en el Borde Exterior y regiones inexploradas, y un intervalo de 24–48 horas en el Núcleo Profundo.',
-    'about.p4': 'La distinción entre planetas, estaciones y elementos misceláneos se deriva del nombre del elemento, porque el conjunto de origen no incluye esa clasificación explícita. Las consultas de Wookieepedia se muestran dentro del propio visor.',
-    'about.source': 'Fuente de datos: Wason1797/StarWarsMap.',
-    'about.download': 'Descargar CSV',
+    'about.p4': 'La capa dinámica usa las posiciones y rótulos extraídos de planetas.svg, incluidas las ampliaciones de Arkanis, Javin y Kessel. ● identifica planetas y sistemas, ¤ estaciones espaciales y § elementos misceláneos. Las localizaciones restantes conservan las coordenadas del catálogo. Las consultas de Wookieepedia se muestran dentro del propio visor.',
+    'about.source': 'Mapa y capas: Shane Sw5W. Catálogo complementario: Wason1797/StarWarsMap.',
     'status.loading': 'Cargando catálogo…',
     'status.ready': '{locations} localizaciones · {routes} hiperrutas · {crossings} cruces',
     'status.error': 'No se pudo cargar el catálogo',
     'status.loadError': 'Error al cargar el mapa.',
-    'coords.invalid': 'Introduce coordenadas entre 0 y 2048.',
+    'coords.invalid': 'Introduce coordenadas entre 0 y 4320.',
     'unit.lightYears': 'años luz'
   },
   en: {
@@ -145,7 +143,8 @@ const translations = {
     'filters.grid': 'Grid',
     'filters.regions': 'Regions',
     'filters.hyperroutes': 'Hyperroutes',
-    'filters.crossingsOnly': 'Crossings only',
+    'filters.sectors': 'Sectors',
+    'filters.planets': 'Planets',
     'filters.locationType': 'Location type',
     'filters.all': 'All',
     'filters.region': 'Region',
@@ -201,10 +200,6 @@ const translations = {
     'map.fit': 'View full map',
     'map.hint': 'Drag to move · Scroll to zoom · Click a marker to open its summary',
     'map.outside': 'outside map',
-    'legend.title': 'LEGEND',
-    'legend.toggle': 'Hide or show legend',
-    'legend.registeredRoute': 'Registered hyperroute',
-    'legend.crossing': 'Route crossing',
     'type.planet': 'Planet / system',
     'type.station': 'Space station',
     'type.stationShort': 'Station',
@@ -237,17 +232,16 @@ const translations = {
     'wiki.errorBody': 'Wookieepedia did not provide a summary for <strong>{name}</strong> right now. Try again later or switch languages.',
     'about.eyebrow': 'SOURCES AND SCOPE',
     'about.title': 'About this prototype',
-    'about.p1': 'The base image, created by Shane Sw5W (@StarWars5W on Twitter), and its coordinates use a 2048 × 2048 pixel canvas with its origin in the upper-left corner.',
+    'about.p1': 'The base map, created by Shane Sw5W (@StarWars5W on Twitter), is composed on a 4320 × 4320 pixel canvas with its origin in the upper-left corner.',
     'about.p2': 'The cartographic catalog comes from the dataset associated with the reference map. Hyperroutes link their stops in the recorded order. When two networks share no stop, the planner uses a clearly identified, penalized local transfer.',
     'about.p3': 'Distances are estimated from the Standard Galactic Grid: 1 grid square equals 1,500 parsecs and 1 parsec equals 3.26 light-years. Travel time applies the hyperdrive class to a base of 8 hours per grid square on major routes, 16 on ordinary routes, 24 in the Outer Rim and unexplored regions, and 24–48 hours in the Deep Core.',
-    'about.p4': 'The distinction between planets, stations and miscellaneous objects is inferred from each item’s name because the source dataset does not explicitly include that classification. Wookieepedia lookups are displayed inside the atlas.',
-    'about.source': 'Data source: Wason1797/StarWarsMap.',
-    'about.download': 'Download CSV',
+    'about.p4': 'The dynamic layer uses the positions and labels extracted from planetas.svg, including the Arkanis, Javin and Kessel insets. ● marks planets and systems, ¤ space stations and § miscellaneous objects. Remaining locations retain their catalog coordinates. Wookieepedia lookups stay inside the atlas.',
+    'about.source': 'Map and layers: Shane Sw5W. Supplementary catalog: Wason1797/StarWarsMap.',
     'status.loading': 'Loading catalog…',
     'status.ready': '{locations} locations · {routes} hyperroutes · {crossings} crossings',
     'status.error': 'The catalog could not be loaded',
     'status.loadError': 'Error loading the map.',
-    'coords.invalid': 'Enter coordinates between 0 and 2048.',
+    'coords.invalid': 'Enter coordinates between 0 and 4320.',
     'unit.lightYears': 'light-years'
   }
 };
@@ -294,13 +288,17 @@ const canvas = $('#galaxyCanvas');
 const stage = $('#mapStage');
 const ctx = canvas.getContext('2d', { alpha: false });
 
-// Placeholder sources: replace each path when the separated transparent layers arrive.
 const backgroundLayerSources = {
-  grid: './assets/galaxy-map.jpg',
-  regions: './assets/galaxy-map.jpg',
-  hyperroutes: './assets/galaxy-map.jpg'
+  background: './assets/galaxy-background.png',
+  regions: './assets/galaxy-regions.png',
+  grid: './assets/galaxy-grid.png',
+  sectors: './assets/galaxy-sectors.png',
+  hyperroutes: './assets/galaxy-hyperroutes.png',
+  planetsBackground: './assets/galaxy-planets-bg.png',
+  legend: './assets/galaxy-legend.png'
 };
-const backgroundLayerOrder = ['grid', 'regions', 'hyperroutes'];
+const baseLayerOrder = ['background', 'regions', 'grid', 'sectors', 'hyperroutes'];
+const backgroundLayerOrder = [...baseLayerOrder, 'planetsBackground', 'legend'];
 const backgroundLayerImages = Object.fromEntries(backgroundLayerOrder.map((key) => {
   const layerImage = new Image();
   layerImage.src = backgroundLayerSources[key];
@@ -321,12 +319,10 @@ const regionColors = {
   'Uncharted Region': '#98a5b5'
 };
 
-const importantRoutes = {
-  'Perlemian Trade Route': '#f6c75b',
-  'Corellian Run': '#ef7187',
-  'Corellian Trade Spine': '#71d9ff',
-  'Rimma Trade Route': '#a58cff',
-  'Hydian Way': '#70e0a1'
+const insetBounds = {
+  arkanis: { left: 168, top: 1680, right: 880, bottom: 2648 },
+  javin: { left: 168, top: 2668, right: 880, bottom: 3724 },
+  kessel: { left: 168, top: 3744, right: 1048, bottom: 4164 }
 };
 
 const state = {
@@ -351,8 +347,7 @@ const state = {
   coordinateTarget: null,
   activeType: 'all',
   activeRegion: 'all',
-  crossingsOnly: false,
-  layerVisibility: { grid: true, regions: true, hyperroutes: true },
+  layerVisibility: { background: true, grid: true, regions: true, sectors: true, hyperroutes: true, planets: true },
   activeMode: 'explore',
   imageReady: false,
   hasFitted: false,
@@ -441,17 +436,9 @@ function applyLocale(locale, persist = true) {
   if (wikiDialog.open && state.currentWikiLocation) loadWikiLanguage(state.currentWikiLocation, state.locale);
 }
 
-function routeColor(name) {
-  if (importantRoutes[name]) return importantRoutes[name];
-  let hash = 0;
-  for (let i = 0; i < name.length; i += 1) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
-  return `hsl(${Math.abs(hash) % 360} 58% 62%)`;
-}
-
 function isVisible(location) {
   if (state.activeType !== 'all' && location.category !== state.activeType) return false;
   if (state.activeRegion !== 'all' && location.region !== state.activeRegion) return false;
-  if (state.crossingsOnly && location.routes.length < 2) return false;
   return true;
 }
 
@@ -481,10 +468,10 @@ function resizeCanvas() {
 function fitMap() {
   const rect = stage.getBoundingClientRect();
   const padding = rect.width < 700 ? 8 : 20;
-  state.fitScale = Math.min((rect.width - padding * 2) / 2048, (rect.height - padding * 2) / 2048);
+  state.fitScale = Math.min((rect.width - padding * 2) / MAP_SIZE, (rect.height - padding * 2) / MAP_SIZE);
   state.view.scale = state.fitScale;
-  state.view.x = (rect.width - 2048 * state.view.scale) / 2;
-  state.view.y = (rect.height - 2048 * state.view.scale) / 2;
+  state.view.x = (rect.width - MAP_SIZE * state.view.scale) / 2;
+  state.view.y = (rect.height - MAP_SIZE * state.view.scale) / 2;
   state.coordinateTarget = null;
   requestDraw();
 }
@@ -499,10 +486,10 @@ function zoomAt(screenX, screenY, factor) {
   requestDraw();
 }
 
-function focusPoint(px, py, targetScale = 1.45) {
+function focusPoint(px, py, targetScale = 0.7) {
   const rect = stage.getBoundingClientRect();
   const panelOffset = rect.width > 700 ? 0 : 0;
-  state.view.scale = Math.max(state.fitScale * 1.8, Math.min(targetScale, 3));
+  state.view.scale = Math.max(state.fitScale * 1.8, Math.min(targetScale, 1.5));
   state.view.x = rect.width / 2 + panelOffset - px * state.view.scale;
   state.view.y = rect.height / 2 - py * state.view.scale;
   requestDraw();
@@ -518,7 +505,7 @@ function fitPath(nodeIds) {
   const maxY = Math.max(...points.map((p) => p.py));
   const width = Math.max(100, maxX - minX);
   const height = Math.max(100, maxY - minY);
-  state.view.scale = Math.max(state.fitScale, Math.min(2.5, Math.min((rect.width - 150) / width, (rect.height - 150) / height)));
+  state.view.scale = Math.max(state.fitScale, Math.min(1.25, Math.min((rect.width - 150) / width, (rect.height - 150) / height)));
   state.view.x = rect.width / 2 - ((minX + maxX) / 2) * state.view.scale;
   state.view.y = rect.height / 2 - ((minY + maxY) / 2) * state.view.scale;
   requestDraw();
@@ -529,29 +516,71 @@ function requestDraw() {
   state.lastFrame = requestAnimationFrame(draw);
 }
 
-function drawShape(context, location, radius, fill, stroke = null) {
-  context.beginPath();
-  if (location.category === 'station') {
-    context.rect(location.px - radius, location.py - radius, radius * 2, radius * 2);
-  } else if (location.category === 'misc') {
-    context.moveTo(location.px, location.py - radius * 1.25);
-    context.lineTo(location.px + radius * 1.25, location.py);
-    context.lineTo(location.px, location.py + radius * 1.25);
-    context.lineTo(location.px - radius * 1.25, location.py);
-    context.closePath();
-  } else {
-    context.arc(location.px, location.py, radius, 0, Math.PI * 2);
+function locationOccurrences(location) {
+  return location.occurrences?.length ? location.occurrences : [{ px: location.px, py: location.py, zone: 'main' }];
+}
+
+function representativeOccurrences(location) {
+  const groups = new Map();
+  for (const occurrence of locationOccurrences(location)) {
+    const zone = occurrence.zone || 'main';
+    if (!groups.has(zone)) groups.set(zone, []);
+    groups.get(zone).push(occurrence);
   }
-  context.fillStyle = fill;
-  context.fill();
-  if (stroke) {
-    context.strokeStyle = stroke;
-    context.stroke();
+  return [...groups].map(([zone, occurrences]) => {
+    if (zone === 'main') {
+      return occurrences.sort((a, b) => (
+        Math.hypot(a.px - location.px, a.py - location.py) - Math.hypot(b.px - location.px, b.py - location.py)
+      ))[0];
+    }
+    const bounds = insetBounds[zone];
+    const centerX = (bounds.left + bounds.right) / 2;
+    const centerY = (bounds.top + bounds.bottom) / 2;
+    return occurrences.sort((a, b) => (
+      Math.hypot(a.px - centerX, a.py - centerY) - Math.hypot(b.px - centerX, b.py - centerY)
+    ))[0];
+  });
+}
+
+function drawMarker(context, location, occurrence) {
+  const screenSize = location.rank === 0 ? 12.5 : location.rank === 1 ? 11 : 9.5;
+  const fontSize = Math.max(screenSize / state.view.scale, 18);
+  context.save();
+  context.font = `700 ${fontSize}px ${MAP_FONT}`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineJoin = 'round';
+  context.strokeStyle = 'rgb(9,22,53)';
+  context.lineWidth = Math.max(2.5 / state.view.scale, 4);
+  context.fillStyle = regionColors[location.region] || 'rgb(253,244,155)';
+  context.strokeText(location.markerSymbol, occurrence.px, occurrence.py);
+  context.fillText(location.markerSymbol, occurrence.px, occurrence.py);
+  context.restore();
+  return fontSize * .34;
+}
+
+function labelPosition(occurrence, fontSize) {
+  const gap = 7 / state.view.scale;
+  const labelCenterX = occurrence.labelX == null ? occurrence.px + 1 : occurrence.labelX + (occurrence.labelWidth || 0) / 2;
+  const labelCenterY = occurrence.labelY == null ? occurrence.py : occurrence.labelY + (occurrence.labelHeight || 0) / 2;
+  const dx = labelCenterX - occurrence.px;
+  const dy = labelCenterY - occurrence.py;
+  if (Math.abs(dx) >= Math.abs(dy) * .7) {
+    return { x: occurrence.px + Math.sign(dx || 1) * gap, y: occurrence.py + fontSize * .32, align: dx < 0 ? 'right' : 'left' };
   }
+  return {
+    x: occurrence.px,
+    y: occurrence.py + Math.sign(dy || -1) * (gap + fontSize * .25),
+    align: 'center'
+  };
+}
+
+function boxesOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
 function getLocatorVisual() {
-  if (!state.selected || state.activeMode !== 'explore') return null;
+  if (!state.selected || state.activeMode !== 'explore' || !state.layerVisibility.planets) return null;
   const now = performance.now();
   const animating = now < state.locatorUntil;
   const progress = animating ? Math.min(1, (now - state.locatorStartedAt) / (state.locatorUntil - state.locatorStartedAt)) : 1;
@@ -559,25 +588,29 @@ function getLocatorVisual() {
   const finalRadius = 10 / state.view.scale;
   return {
     location: state.selected,
+    occurrences: representativeOccurrences(state.selected),
     animating,
     eased,
-    radius: 42 + (finalRadius - 42) * eased
+    radius: 88 + (finalRadius - 88) * eased
   };
 }
 
-function drawLocatorCrosshair(context, locator) {
-  const { location, radius } = locator;
+function drawLocatorCrosshair(context, occurrence, radius) {
+  const bounds = insetBounds[occurrence.zone] || { left: 0, top: 0, right: MAP_SIZE, bottom: MAP_SIZE };
   const gap = radius + 5 / state.view.scale;
   context.save();
   context.beginPath();
-  context.moveTo(location.px, 0);
-  context.lineTo(location.px, Math.max(0, location.py - gap));
-  context.moveTo(location.px, Math.min(2048, location.py + gap));
-  context.lineTo(location.px, 2048);
-  context.moveTo(0, location.py);
-  context.lineTo(Math.max(0, location.px - gap), location.py);
-  context.moveTo(Math.min(2048, location.px + gap), location.py);
-  context.lineTo(2048, location.py);
+  context.rect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+  context.clip();
+  context.beginPath();
+  context.moveTo(occurrence.px, bounds.top);
+  context.lineTo(occurrence.px, Math.max(bounds.top, occurrence.py - gap));
+  context.moveTo(occurrence.px, Math.min(bounds.bottom, occurrence.py + gap));
+  context.lineTo(occurrence.px, bounds.bottom);
+  context.moveTo(bounds.left, occurrence.py);
+  context.lineTo(Math.max(bounds.left, occurrence.px - gap), occurrence.py);
+  context.moveTo(Math.min(bounds.right, occurrence.px + gap), occurrence.py);
+  context.lineTo(bounds.right, occurrence.py);
   context.strokeStyle = 'rgba(242,245,66,.88)';
   context.lineWidth = 1.75 / state.view.scale;
   context.shadowColor = 'rgba(2,7,13,.95)';
@@ -599,28 +632,10 @@ function draw() {
   ctx.translate(state.view.x, state.view.y);
   ctx.scale(state.view.scale, state.view.scale);
   ctx.imageSmoothingEnabled = true;
-  for (const layer of backgroundLayerOrder) {
-    if (state.layerVisibility[layer]) ctx.drawImage(backgroundLayerImages[layer], 0, 0, 2048, 2048);
+  for (const layer of baseLayerOrder) {
+    if (layer === 'background' || state.layerVisibility[layer]) ctx.drawImage(backgroundLayerImages[layer], 0, 0, MAP_SIZE, MAP_SIZE);
   }
-
-  if (state.layerVisibility.hyperroutes) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    for (const edge of state.data.edges) {
-      if (edge.kind !== 'route') continue;
-      const a = state.byId.get(edge.a);
-      const b = state.byId.get(edge.b);
-      if (!a || !b) continue;
-      ctx.beginPath();
-      ctx.moveTo(a.px, a.py);
-      ctx.lineTo(b.px, b.py);
-      ctx.lineWidth = (importantRoutes[edge.route] ? 1.45 : .72) / state.view.scale;
-      ctx.strokeStyle = routeColor(edge.route);
-      ctx.globalAlpha = importantRoutes[edge.route] ? .65 : .24;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+  if (state.layerVisibility.planets) ctx.drawImage(backgroundLayerImages.planetsBackground, 0, 0, MAP_SIZE, MAP_SIZE);
 
   if (state.highlightedPath) {
     ctx.save();
@@ -629,95 +644,133 @@ function draw() {
     for (const edge of state.highlightedPath.edges) {
       const a = state.byId.get(edge.a);
       const b = state.byId.get(edge.b);
-      ctx.beginPath();
-      ctx.moveTo(a.px, a.py);
-      ctx.lineTo(b.px, b.py);
-      ctx.lineWidth = (edge.kind === 'route' ? 4.5 : 3) / state.view.scale;
-      ctx.strokeStyle = edge.kind === 'route' ? '#ff4157' : '#ffb865';
-      ctx.setLineDash(edge.kind === 'route' ? [] : [7 / state.view.scale, 5 / state.view.scale]);
-      ctx.shadowColor = ctx.strokeStyle;
-      ctx.shadowBlur = 8 / state.view.scale;
-      ctx.globalAlpha = .95;
-      ctx.stroke();
+      const aByZone = new Map(representativeOccurrences(a).map((occurrence) => [occurrence.zone || 'main', occurrence]));
+      const bByZone = new Map(representativeOccurrences(b).map((occurrence) => [occurrence.zone || 'main', occurrence]));
+      for (const [zone, from] of aByZone) {
+        const to = bByZone.get(zone);
+        if (!to) continue;
+        ctx.beginPath();
+        ctx.moveTo(from.px, from.py);
+        ctx.lineTo(to.px, to.py);
+        ctx.lineWidth = (edge.kind === 'route' ? 4.5 : 3) / state.view.scale;
+        ctx.strokeStyle = edge.kind === 'route' ? '#ff4157' : '#ffb865';
+        ctx.setLineDash(edge.kind === 'route' ? [] : [7 / state.view.scale, 5 / state.view.scale]);
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.shadowBlur = 8 / state.view.scale;
+        ctx.globalAlpha = .95;
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }
 
   const locator = getLocatorVisual();
-  if (locator) drawLocatorCrosshair(ctx, locator);
+  if (locator) {
+    for (const occurrence of locator.occurrences) drawLocatorCrosshair(ctx, occurrence, locator.radius);
+  }
 
-  const labelThreshold = state.view.scale > .72 ? (state.view.scale > 1.35 ? 2 : 0) : -1;
   const selectedId = state.selected?.id;
-  for (const location of state.locations) {
-    if (!isVisible(location) && location.id !== selectedId) continue;
-    const base = location.rank === 0 ? 5 : location.rank === 1 ? 3.8 : location.rank === 2 ? 2.8 : 2.2;
-    const radius = Math.max(base / state.view.scale, .9 / state.view.scale);
-    ctx.lineWidth = .8 / state.view.scale;
-    const color = regionColors[location.region] || '#b7c4d2';
-    drawShape(ctx, location, radius, color, 'rgba(2,7,13,.85)');
-    if (location.routes.length > 1) {
-      ctx.beginPath();
-      ctx.arc(location.px, location.py, radius + 2.2 / state.view.scale, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffbd66';
-      ctx.lineWidth = 1.1 / state.view.scale;
-      ctx.globalAlpha = .85;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+  if (state.layerVisibility.planets) {
+    const labelThreshold = state.view.scale > .76 ? 3 : state.view.scale > .5 ? 2 : state.view.scale > .28 ? 1 : 0;
+    const labelCandidates = [];
+    for (const location of state.locations) {
+      if (!isVisible(location) && location.id !== selectedId) continue;
+      for (const occurrence of locationOccurrences(location)) {
+        const radius = drawMarker(ctx, location, occurrence);
+        if (location.routes.length > 1) {
+          ctx.beginPath();
+          ctx.arc(occurrence.px, occurrence.py, radius + 2.2 / state.view.scale, 0, Math.PI * 2);
+          ctx.strokeStyle = '#ffbd66';
+          ctx.lineWidth = 1.1 / state.view.scale;
+          ctx.globalAlpha = .85;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        if (labelThreshold >= location.rank || location.id === selectedId || location.id === state.hovered?.id) {
+          labelCandidates.push({ location, occurrence });
+        }
+      }
     }
-    if (labelThreshold >= location.rank || location.id === selectedId) {
-      ctx.font = `${Math.max(8.5 / state.view.scale, 4)}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillStyle = location.id === selectedId ? '#ffffff' : 'rgba(223,238,249,.9)';
-      ctx.shadowColor = '#02070d';
-      ctx.shadowBlur = 3 / state.view.scale;
-      ctx.fillText(location.name, location.px + 5 / state.view.scale, location.py - 4 / state.view.scale);
+    labelCandidates.sort((a, b) => (
+      Number(b.location.id === selectedId) - Number(a.location.id === selectedId)
+      || Number(b.location.id === state.hovered?.id) - Number(a.location.id === state.hovered?.id)
+      || a.location.rank - b.location.rank
+    ));
+    const placedLabels = [];
+    for (const { location, occurrence } of labelCandidates) {
+      const fontSize = Math.max(12.5 / state.view.scale, 18);
+      ctx.font = `${fontSize}px ${MAP_FONT}`;
+      const position = labelPosition(occurrence, fontSize);
+      const width = ctx.measureText(location.mapLabel || location.name).width;
+      const left = position.align === 'right' ? position.x - width : position.align === 'center' ? position.x - width / 2 : position.x;
+      const box = { left, right: left + width, top: position.y - fontSize * .86, bottom: position.y + fontSize * .25 };
+      const forced = location.id === selectedId || location.id === state.hovered?.id;
+      if (!forced && placedLabels.some((placed) => boxesOverlap(box, placed))) continue;
+      placedLabels.push(box);
+      ctx.save();
+      ctx.font = `${fontSize}px ${MAP_FONT}`;
+      ctx.textAlign = position.align;
+      ctx.textBaseline = 'alphabetic';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgb(9,22,53)';
+      ctx.lineWidth = Math.max(3.25 / state.view.scale, 5);
+      ctx.fillStyle = 'rgb(253,244,155)';
+      ctx.strokeText(location.mapLabel || location.name, position.x, position.y);
+      ctx.fillText(location.mapLabel || location.name, position.x, position.y);
+      ctx.restore();
+    }
+  }
+
+  if (state.layerVisibility.planets && state.hovered && state.hovered.id !== selectedId && isVisible(state.hovered)) {
+    for (const occurrence of representativeOccurrences(state.hovered)) {
+      ctx.beginPath();
+      ctx.arc(occurrence.px, occurrence.py, 9 / state.view.scale, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5 / state.view.scale;
+      ctx.shadowColor = '#4bdcf5';
+      ctx.shadowBlur = 10 / state.view.scale;
+      ctx.stroke();
       ctx.shadowBlur = 0;
     }
   }
 
-  if (state.hovered && state.hovered.id !== selectedId && isVisible(state.hovered)) {
-    ctx.beginPath();
-    ctx.arc(state.hovered.px, state.hovered.py, 9 / state.view.scale, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5 / state.view.scale;
-    ctx.shadowColor = '#4bdcf5';
-    ctx.shadowBlur = 10 / state.view.scale;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-  }
-
   if (locator) {
-    const { location: p, radius: locatorRadius, eased, animating } = locator;
-    ctx.beginPath();
-    ctx.arc(p.px, p.py, locatorRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgb(242,245,66)';
-    ctx.lineWidth = 2 / state.view.scale;
-    ctx.globalAlpha = .55 + eased * .45;
-    ctx.shadowColor = 'rgb(242,245,66)';
-    ctx.shadowBlur = 13 / state.view.scale;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
+    const { radius: locatorRadius, eased, animating } = locator;
+    for (const occurrence of locator.occurrences) {
+      ctx.beginPath();
+      ctx.arc(occurrence.px, occurrence.py, locatorRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgb(242,245,66)';
+      ctx.lineWidth = 2 / state.view.scale;
+      ctx.globalAlpha = .55 + eased * .45;
+      ctx.shadowColor = 'rgb(242,245,66)';
+      ctx.shadowBlur = 13 / state.view.scale;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
     if (animating) requestDraw();
   }
 
   const drawRouteEndpoint = (location, label, color) => {
     if (!location) return;
-    const radius = 9 / state.view.scale;
-    ctx.beginPath();
-    ctx.arc(location.px, location.py, radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(3,10,18,.92)';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2 / state.view.scale;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 8 / state.view.scale;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = color;
-    ctx.font = `800 ${10 / state.view.scale}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, location.px, location.py + .3 / state.view.scale);
+    for (const occurrence of representativeOccurrences(location)) {
+      const radius = 9 / state.view.scale;
+      ctx.beginPath();
+      ctx.arc(occurrence.px, occurrence.py, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(3,10,18,.92)';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 / state.view.scale;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8 / state.view.scale;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = color;
+      ctx.font = `800 ${10 / state.view.scale}px ${MAP_FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, occurrence.px, occurrence.py + .3 / state.view.scale);
+    }
     ctx.textAlign = 'start';
     ctx.textBaseline = 'alphabetic';
   };
@@ -735,6 +788,7 @@ function draw() {
     ctx.lineTo(x, y + 12 / state.view.scale);
     ctx.stroke();
   }
+  ctx.drawImage(backgroundLayerImages.legend, 0, 0, MAP_SIZE, MAP_SIZE);
   ctx.restore();
 }
 
@@ -814,6 +868,11 @@ function attachAutocomplete(input, container, onSelect) {
 }
 
 function selectLocation(location, focus = true) {
+  if (!state.layerVisibility.planets) {
+    state.layerVisibility.planets = true;
+    const planetsControl = $('[data-map-layer="planets"]');
+    if (planetsControl) planetsControl.checked = true;
+  }
   state.selected = location;
   state.locatorStartedAt = performance.now();
   state.locatorUntil = state.locatorStartedAt + 1350;
@@ -1276,16 +1335,19 @@ function updateFilterCount() {
 }
 
 function hitTest(screenX, screenY, includeFiltered = false) {
+  if (!state.layerVisibility.planets) return null;
   const point = screenToMap(screenX, screenY);
   const threshold = 20 / state.view.scale;
   let best = null;
   let bestDistance = threshold;
   for (const location of state.locations) {
     if (!includeFiltered && !isVisible(location)) continue;
-    const d = Math.hypot(location.px - point.x, location.py - point.y);
-    if (d < bestDistance) {
-      best = location;
-      bestDistance = d;
+    for (const occurrence of locationOccurrences(location)) {
+      const d = Math.hypot(occurrence.px - point.x, occurrence.py - point.y);
+      if (d < bestDistance) {
+        best = location;
+        bestDistance = d;
+      }
     }
   }
   return best;
@@ -1327,26 +1389,25 @@ function bindUI() {
     updateFilterCount();
     requestDraw();
   });
-  $('#crossingsOnly').addEventListener('change', (event) => {
-    state.crossingsOnly = event.target.checked;
-    updateFilterCount();
-    requestDraw();
-  });
   $$('[data-map-layer]').forEach((input) => input.addEventListener('change', (event) => {
     state.layerVisibility[event.target.dataset.mapLayer] = event.target.checked;
+    if (event.target.dataset.mapLayer === 'planets' && !event.target.checked) {
+      state.hovered = null;
+      $('#mapTooltip').classList.remove('show');
+    }
     requestDraw();
   }));
 
   $('#goCoords').addEventListener('click', () => {
     const x = Number($('#coordX').value);
     const y = Number($('#coordY').value);
-    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x > 2048 || y > 2048) {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x > MAP_SIZE || y > MAP_SIZE) {
       showToast(t('coords.invalid'));
       return;
     }
     state.selected = null;
     state.coordinateTarget = { x, y };
-    focusPoint(x, y, 1.25);
+    focusPoint(x, y, 0.6);
   });
 
   $('#swapRoute').addEventListener('click', () => {
@@ -1377,10 +1438,6 @@ function bindUI() {
   $('#zoomIn').addEventListener('click', () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1.35));
   $('#zoomOut').addEventListener('click', () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1 / 1.35));
   $('#fitMap').addEventListener('click', fitMap);
-  $('#legendToggle').addEventListener('click', () => {
-    const collapsed = $('#legend').classList.toggle('collapsed');
-    $('#legendToggle').textContent = collapsed ? '+' : '−';
-  });
 
   $('#aboutButton').addEventListener('click', () => $('#aboutDialog').showModal());
   $('#closeAbout').addEventListener('click', () => $('#aboutDialog').close());
@@ -1414,7 +1471,7 @@ function bindUI() {
   canvas.addEventListener('pointermove', (event) => {
     const rect = canvas.getBoundingClientRect();
     const map = screenToMap(event.clientX - rect.left, event.clientY - rect.top);
-    $('#coordinateReadout').textContent = map.x >= 0 && map.y >= 0 && map.x <= 2048 && map.y <= 2048 ? `px ${Math.round(map.x)}, ${Math.round(map.y)}` : t('map.outside');
+    $('#coordinateReadout').textContent = map.x >= 0 && map.y >= 0 && map.x <= MAP_SIZE && map.y <= MAP_SIZE ? `px ${Math.round(map.x)}, ${Math.round(map.y)}` : t('map.outside');
     if (state.dragging) {
       state.hovered = null;
       $('#mapTooltip').classList.remove('show');

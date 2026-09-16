@@ -10,7 +10,7 @@
   --cyan-soft: rgba(75, 220, 245, .13);
   --amber: #ffbc64;
   --danger: #ff7a8a;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -124,10 +124,7 @@ button { color: inherit; }
 .filter-chip { padding: 7px 9px; border: 1px solid var(--line); border-radius: 99px; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
 .filter-chip:hover { color: var(--ink); }
 .filter-chip.active { border-color: rgba(75,220,245,.5); color: var(--cyan); background: rgba(75,220,245,.08); }
-.shape { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border: 1px solid currentColor; vertical-align: 0; }
-.shape-circle { border-radius: 50%; background: currentColor; }
-.shape-square { background: currentColor; }
-.shape-diamond { transform: rotate(45deg); background: currentColor; }
+.key-symbol { display: inline-block; min-width: 12px; margin-right: 4px; color: #fdf49b; font-size: 13px; font-weight: 700; line-height: 1; text-align: center; text-shadow: 0 0 2px #091635; }
 select { padding: 0 10px; color: #c5d3e2; }
 .coordinate-fields { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 7px; padding: 0 12px 12px; }
 .coordinate-fields label { color: var(--muted); font-size: 10px; }
@@ -213,13 +210,6 @@ select { padding: 0 10px; color: #c5d3e2; }
 .map-tools button { width: 37px; height: 37px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: #b9c8d8; cursor: pointer; font-size: 18px; }
 .map-tools button:last-child { border-bottom: 0; font-size: 14px; }
 .map-tools button:hover { color: var(--cyan); background: var(--cyan-soft); }
-.legend { position: absolute; left: 18px; bottom: 46px; width: 192px; border: 1px solid var(--line); border-radius: 7px; background: rgba(7,17,30,.89); backdrop-filter: blur(8px); font-size: 10px; }
-.legend-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 10px; border-bottom: 1px solid var(--line); letter-spacing: .1em; font-size: 9px; }
-.legend-head button { background: transparent; border: 0; color: var(--muted); cursor: pointer; }
-.legend-body { padding: 8px 10px 10px; color: #a1b1c2; display: grid; gap: 7px; }
-.legend.collapsed .legend-body { display: none; }
-.route-line { display: inline-block; width: 17px; height: 2px; margin-right: 6px; background: var(--cyan); vertical-align: 3px; }
-.crossing-symbol { display: inline-block; width: 9px; height: 9px; border: 2px solid var(--amber); border-radius: 50%; margin-right: 10px; vertical-align: -1px; }
 .coordinate-readout { position: absolute; right: 18px; bottom: 16px; padding: 6px 8px; border-radius: 5px; color: #9aabc0; background: rgba(7,17,30,.78); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; pointer-events: none; }
 .map-hint { position: absolute; left: 50%; top: 15px; transform: translateX(-50%); background: rgba(7,17,30,.82); border: 1px solid var(--line); border-radius: 99px; padding: 7px 11px; color: var(--muted); font-size: 9px; pointer-events: none; transition: opacity .4s; }
 
@@ -268,7 +258,6 @@ dialog p { color: #9cadbf; font-size: 12px; line-height: 1.65; }
   .mobile-panel-button { display: block; }
   .catalog-status { display: none; }
   .map-hint { display: none; }
-  .legend { left: 12px; bottom: 12px; }
   .map-tools { right: 12px; top: 12px; }
   .coordinate-readout { right: 12px; bottom: 12px; }
 }
@@ -282,7 +271,6 @@ dialog p { color: #9cadbf; font-size: 12px; line-height: 1.65; }
   .brand-cluster { gap: 10px; }
   .language-switch { gap: 3px; }
   .language-switch button { width: 28px; height: 28px; }
-  .legend { width: 175px; }
   .wiki-modal-top { align-items: start; flex-direction: column; padding-right: 20px; }
   .wiki-layout { grid-template-columns: 1fr; gap: 14px; }
   .wiki-hero { max-height: 180px; object-position: center 25%; }

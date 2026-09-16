@@ -1,35 +1,12 @@
-ATLAS GALÁCTICO — INSTALACIÓN LOCAL EN XAMPP
+ATLAS GALÁCTICO — INSTALACIÓN LOCAL (XAMPP / APACHE)
 
-Este paquete es una web estática. No necesita Node.js, Yarn, Python,
-Anaconda ni base de datos para funcionar.
+1. Descomprime todo el contenido de este ZIP en:
+   E:\Xampp\htdocs\MapaEspacial
 
-INSTALACIÓN
+2. Inicia Apache desde el panel de control de XAMPP.
 
-1. Descomprime la carpeta MapaEspacial.
-2. Colócala en:
-   E:\\Xampp\\htdocs\\MapaEspacial
-
-   Si ya tienes creada una unión de directorio entre esa ruta y
-   E:\\gits\\MapaEspacial, descomprime o copia estos archivos en:
-   E:\\gits\\MapaEspacial
-
-3. Inicia Apache desde el panel de XAMPP.
-4. Abre en el navegador:
+3. Abre en el navegador:
    http://localhost/MapaEspacial/
 
-ACTUALIZACIÓN
-
-Para sustituir una instalación anterior, copia el contenido de esta carpeta
-sobre la instalación existente y acepta reemplazar los archivos con el mismo
-nombre. Conserva intacta la carpeta assets.
-
-CONTENIDO
-
-- index.html: página principal.
-- styles.css: diseño de la interfaz.
-- app.js: mapa, búsquedas, fichas y controles.
-- route-math.js: cálculo de rutas, distancias y tiempos.
-- assets/galaxy-map.jpg: imagen base del mapa.
-
-Esta entrega incluye el localizador seleccionado con cruz y halo amarillos
-RGB (242, 245, 66).
+No necesitas instalar Node.js, Yarn, Python ni ejecutar una compilación.
+La consulta de Wookieepedia requiere conexión a Internet.
