@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111f">
@@ -76,16 +77,20 @@
         <section class="panel-section hidden" id="routePanel">
           <div class="route-heading"><span data-i18n="route.eyebrow">TRAZADOR DE HIPERRUTAS</span><h2 data-i18n="route.title">Planifica un trayecto</h2><p data-i18n="route.description">Escribe un nombre o activa un campo y pulsa directamente un marcador del mapa.</p></div>
           <label class="field-label" for="routeFrom" data-i18n="route.origin">Origen</label>
-          <div class="search-wrap route-search" id="routeFromWrap">
+          <div class="search-wrap route-search" id="routeFromWrap" data-route-target="from">
             <span class="route-marker from">A</span>
             <input id="routeFrom" autocomplete="off" placeholder="Planeta de salida" data-i18n-placeholder="route.originPlaceholder">
             <button class="map-pick-button" data-route-pick="from" type="button" aria-label="Elegir origen en el mapa" title="Elegir en el mapa" data-i18n-aria-label="route.pickOrigin" data-i18n-title="route.pickOnMap">⌖</button>
             <div class="suggestions" id="fromSuggestions" role="listbox"></div>
           </div>
-          <button class="swap-button" id="swapRoute" type="button" aria-label="Intercambiar origen y destino" data-i18n-aria-label="route.swap">⇅</button>
+          <div class="route-stops" id="routeStops" aria-live="polite"></div>
+          <div class="route-stop-actions">
+            <button class="add-stop-button" id="addRouteStop" type="button"><span aria-hidden="true">＋</span><span data-i18n="route.addStop">Añadir parada</span></button>
+            <button class="swap-button" id="swapRoute" type="button" aria-label="Invertir el orden del trayecto" title="Invertir el orden del trayecto" data-i18n-aria-label="route.reverse" data-i18n-title="route.reverse">⇅</button>
+          </div>
           <label class="field-label" for="routeTo" data-i18n="route.destination">Destino</label>
-          <div class="search-wrap route-search" id="routeToWrap">
-            <span class="route-marker to">B</span>
+          <div class="search-wrap route-search" id="routeToWrap" data-route-target="to">
+            <span class="route-marker to" id="routeToMarker">B</span>
             <input id="routeTo" autocomplete="off" placeholder="Planeta de destino" data-i18n-placeholder="route.destinationPlaceholder">
             <button class="map-pick-button" data-route-pick="to" type="button" aria-label="Elegir destino en el mapa" title="Elegir en el mapa" data-i18n-aria-label="route.pickDestination" data-i18n-title="route.pickOnMap">⌖</button>
             <div class="suggestions" id="toSuggestions" role="listbox"></div>
@@ -116,7 +121,8 @@
         </section>
       </div>
       <footer class="sidebar-footer">
-        <a href="mailto:galaxymap.4u515@aleeas.com">@Bextia 2026</a>
+        <a class="footer-button" href="https://github.com/Bextia/MapaEspacial" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a class="footer-button" href="mailto:galaxymap.4u515@aleeas.com">@Bextia 2026</a>
         <button id="aboutButton" type="button" data-i18n="footer.about">Acerca de los datos</button>
       </footer>
     </aside>

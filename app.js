@@ -4,6 +4,9 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const MAP_SIZE = 4320;
 const MAP_FONT = '"Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow", Arial, sans-serif';
+const MAX_ROUTE_STOPS = 8;
+const MAX_ROUTE_OPTIONS = 3;
+const CANDIDATE_PATHS_PER_LEG = 6;
 
 const translations = {
   es: {
@@ -44,10 +47,21 @@ const translations = {
     'route.pickDestination': 'Elegir destino en el mapa',
     'route.pickOnMap': 'Elegir en el mapa',
     'route.swap': 'Intercambiar origen y destino',
+    'route.reverse': 'Invertir el orden del trayecto',
+    'route.addStop': 'Añadir parada',
+    'route.stop': 'Parada {number}',
+    'route.stopPlaceholder': 'Planeta de la parada',
+    'route.pickStop': 'Elegir la parada {number} en el mapa',
+    'route.removeStop': 'Eliminar la parada {number}',
+    'route.moveStopUp': 'Subir la parada {number}',
+    'route.moveStopDown': 'Bajar la parada {number}',
+    'route.dragStop': 'Arrastrar para reordenar la parada {number}',
+    'route.maximumStops': 'Se permite un máximo de {count} paradas.',
     'route.pickNote': 'Pulsa un campo para elegir ese punto en el mapa.',
     'route.pickActive': 'Selección activa: pulsa en el mapa el {endpoint}.',
     'route.originA': 'origen A',
-    'route.destinationB': 'destino B',
+    'route.destinationB': 'destino {letter}',
+    'route.stopTarget': 'parada {number} ({letter})',
     'route.mapPickHint': 'Pulsa un marcador para elegir el {endpoint}',
     'route.hyperdriveLabel': 'Clase del hipermotor',
     'route.class': 'Clase {value}',
@@ -63,9 +77,21 @@ const translations = {
     'route.totalTime': 'Tiempo total · clase {class}',
     'route.transferWarning': 'Incluye enlaces locales: no son hiperrutas nominales y se muestran en ámbar discontinuo.',
     'route.validEndpoints': 'Selecciona un origen y un destino válidos.',
+    'route.validStops': 'Selecciona una localización válida para cada parada.',
+    'route.sameAdjacentPoint': 'Dos puntos consecutivos del trayecto no pueden ser iguales.',
     'route.sameEndpoint': 'El origen y el destino son el mismo punto.',
     'route.selectedOrigin': '{name} seleccionado como origen. Pulsa el destino.',
     'route.selectedDestination': '{name} seleccionado como destino.',
+    'route.selectedPoint': '{name} seleccionado como {endpoint}.',
+    'route.availableRoutes': 'Rutas disponibles',
+    'route.option': 'Ruta {letter}',
+    'route.recommended': 'Recomendada',
+    'route.showOption': 'Mostrar la ruta {letter}',
+    'route.itinerary': 'Itinerario',
+    'route.stops.one': '1 parada',
+    'route.stops.many': '{count} paradas',
+    'route.localLinks.one': '1 enlace local',
+    'route.localLinks.many': '{count} enlaces locales',
     'travel.major': 'Ruta mayor',
     'travel.deepCore': 'Núcleo Profundo',
     'travel.outer': 'Espacio exterior / inexplorado',
@@ -163,10 +189,21 @@ const translations = {
     'route.pickDestination': 'Choose destination on the map',
     'route.pickOnMap': 'Choose on the map',
     'route.swap': 'Swap origin and destination',
+    'route.reverse': 'Reverse journey order',
+    'route.addStop': 'Add stop',
+    'route.stop': 'Stop {number}',
+    'route.stopPlaceholder': 'Stop location',
+    'route.pickStop': 'Choose stop {number} on the map',
+    'route.removeStop': 'Remove stop {number}',
+    'route.moveStopUp': 'Move stop {number} up',
+    'route.moveStopDown': 'Move stop {number} down',
+    'route.dragStop': 'Drag to reorder stop {number}',
+    'route.maximumStops': 'A maximum of {count} stops is allowed.',
     'route.pickNote': 'Select a field to choose that point on the map.',
     'route.pickActive': 'Active selection: click the {endpoint} on the map.',
     'route.originA': 'origin A',
-    'route.destinationB': 'destination B',
+    'route.destinationB': 'destination {letter}',
+    'route.stopTarget': 'stop {number} ({letter})',
     'route.mapPickHint': 'Click a marker to choose {endpoint}',
     'route.hyperdriveLabel': 'Hyperdrive class',
     'route.class': 'Class {value}',
@@ -182,9 +219,21 @@ const translations = {
     'route.totalTime': 'Total time · class {class}',
     'route.transferWarning': 'Includes local links: these are not named hyperroutes and are shown as dashed amber lines.',
     'route.validEndpoints': 'Select a valid origin and destination.',
+    'route.validStops': 'Select a valid location for every stop.',
+    'route.sameAdjacentPoint': 'Two consecutive journey points cannot be the same.',
     'route.sameEndpoint': 'The origin and destination are the same point.',
     'route.selectedOrigin': '{name} selected as the origin. Now choose the destination.',
     'route.selectedDestination': '{name} selected as the destination.',
+    'route.selectedPoint': '{name} selected as {endpoint}.',
+    'route.availableRoutes': 'Available routes',
+    'route.option': 'Route {letter}',
+    'route.recommended': 'Recommended',
+    'route.showOption': 'Show route {letter}',
+    'route.itinerary': 'Itinerary',
+    'route.stops.one': '1 stop',
+    'route.stops.many': '{count} stops',
+    'route.localLinks.one': '1 local link',
+    'route.localLinks.many': '{count} local links',
     'travel.major': 'Major hyperroute',
     'travel.deepCore': 'Deep Core',
     'travel.outer': 'Outer / unexplored space',
@@ -342,7 +391,9 @@ const state = {
   currentRoute: null,
   routePickTarget: null,
   routeFrom: null,
+  routeWaypoints: [],
   routeTo: null,
+  nextWaypointId: 1,
   hyperdriveClass: 1,
   coordinateTarget: null,
   activeType: 'all',
@@ -419,12 +470,14 @@ function applyLocale(locale, persist = true) {
   if (state.data) {
     populateRegions();
     updateFilterCount();
+    renderRouteStops();
+    updateRouteEndpointLabels();
     if (state.selected && state.activeMode === 'explore') showDetail(state.selected);
-    if (state.currentRoute) renderRoute(state.currentRoute.path, state.currentRoute.start, state.currentRoute.end, false);
+    if (state.currentRoute) renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, state.currentRoute.activeIndex, false);
   }
   $('#hyperdriveValue').textContent = t('route.class', { value: formatClass(state.hyperdriveClass) });
   if (state.routePickTarget) {
-    const endpoint = state.routePickTarget === 'from' ? t('route.originA') : t('route.destinationB');
+    const endpoint = routeTargetLabel(state.routePickTarget);
     $('#routePickNote').textContent = t('route.pickActive', { endpoint });
     $('#mapHint').textContent = t('route.mapPickHint', { endpoint });
   } else {
@@ -775,7 +828,8 @@ function draw() {
     ctx.textBaseline = 'alphabetic';
   };
   drawRouteEndpoint(state.routeFrom, 'A', '#4bdcf5');
-  drawRouteEndpoint(state.routeTo, 'B', '#ffbc64');
+  state.routeWaypoints.forEach((waypoint, index) => drawRouteEndpoint(waypoint.location, routeLetter(index + 1), '#f2f542'));
+  drawRouteEndpoint(state.routeTo, routeLetter(state.routeWaypoints.length + 1), '#ffbc64');
 
   if (state.coordinateTarget) {
     const { x, y } = state.coordinateTarget;
@@ -1129,7 +1183,7 @@ class MinHeap {
   }
 }
 
-function shortestPath(start, end) {
+function shortestPath(start, end, { bannedEdges = new Set(), bannedNodes = new Set() } = {}) {
   const n = state.locations.length;
   const dist = new Float64Array(n);
   dist.fill(Infinity);
@@ -1138,6 +1192,7 @@ function shortestPath(start, end) {
   const previousEdge = new Int32Array(n);
   previousEdge.fill(-1);
   const heap = new MinHeap();
+  if (bannedNodes.has(start.id) || bannedNodes.has(end.id)) return null;
   dist[start.id] = 0;
   heap.push({ id: start.id, distance: 0 });
   while (heap.items.length) {
@@ -1145,6 +1200,7 @@ function shortestPath(start, end) {
     if (current.distance !== dist[current.id]) continue;
     if (current.id === end.id) break;
     for (const step of state.adjacency[current.id]) {
+      if (bannedEdges.has(step.edgeIndex) || bannedNodes.has(step.to)) continue;
       const edge = state.data.edges[step.edgeIndex];
       const nextDistance = current.distance + edge.weight;
       if (nextDistance < dist[step.to]) {
@@ -1168,7 +1224,134 @@ function shortestPath(start, end) {
   }
   nodes.reverse();
   edgeIndexes.reverse();
-  return { nodes, edges: edgeIndexes.map((index) => state.data.edges[index]), distance: dist[end.id] };
+  return { nodes, edgeIndexes, edges: edgeIndexes.map((index) => state.data.edges[index]), distance: dist[end.id] };
+}
+
+function pathKey(path) {
+  return path.nodes.join('>');
+}
+
+function pathDistance(edgeIndexes) {
+  return edgeIndexes.reduce((sum, edgeIndex) => sum + state.data.edges[edgeIndex].weight, 0);
+}
+
+function kShortestPaths(start, end, limit = CANDIDATE_PATHS_PER_LEG) {
+  const first = shortestPath(start, end);
+  if (!first) return [];
+  const accepted = [first];
+  const acceptedKeys = new Set([pathKey(first)]);
+  const candidates = new MinHeap();
+  const candidateKeys = new Set();
+
+  while (accepted.length < limit) {
+    const previousPath = accepted[accepted.length - 1];
+    for (let spurIndex = 0; spurIndex < previousPath.nodes.length - 1; spurIndex += 1) {
+      const rootNodes = previousPath.nodes.slice(0, spurIndex + 1);
+      const rootEdges = previousPath.edgeIndexes.slice(0, spurIndex);
+      const bannedEdges = new Set();
+      for (const path of accepted) {
+        const sharesRoot = rootNodes.every((nodeId, index) => path.nodes[index] === nodeId);
+        if (!sharesRoot || path.nodes[spurIndex + 1] === undefined) continue;
+        const nextNode = path.nodes[spurIndex + 1];
+        for (const step of state.adjacency[path.nodes[spurIndex]]) {
+          if (step.to === nextNode) bannedEdges.add(step.edgeIndex);
+        }
+      }
+      const bannedNodes = new Set(rootNodes.slice(0, -1));
+      const spurStart = state.byId.get(rootNodes[rootNodes.length - 1]);
+      const spurPath = shortestPath(spurStart, end, { bannedEdges, bannedNodes });
+      if (!spurPath) continue;
+      const nodes = [...rootNodes.slice(0, -1), ...spurPath.nodes];
+      if (new Set(nodes).size !== nodes.length) continue;
+      const edgeIndexes = [...rootEdges, ...spurPath.edgeIndexes];
+      const path = {
+        nodes,
+        edgeIndexes,
+        edges: edgeIndexes.map((index) => state.data.edges[index]),
+        distance: pathDistance(edgeIndexes)
+      };
+      const key = pathKey(path);
+      if (acceptedKeys.has(key) || candidateKeys.has(key)) continue;
+      candidateKeys.add(key);
+      candidates.push(path);
+    }
+
+    let next = candidates.pop();
+    while (next && acceptedKeys.has(pathKey(next))) next = candidates.pop();
+    if (!next) break;
+    accepted.push(next);
+    acceptedKeys.add(pathKey(next));
+  }
+  return accepted;
+}
+
+function combineSegmentPaths(points, segmentPaths) {
+  const nodes = [];
+  const edgeIndexes = [];
+  segmentPaths.forEach((path, index) => {
+    nodes.push(...(index === 0 ? path.nodes : path.nodes.slice(1)));
+    edgeIndexes.push(...path.edgeIndexes);
+  });
+  return {
+    nodes,
+    edgeIndexes,
+    edges: edgeIndexes.map((index) => state.data.edges[index]),
+    distance: segmentPaths.reduce((sum, path) => sum + path.distance, 0),
+    points,
+    segments: segmentPaths
+  };
+}
+
+function edgeSimilarity(a, b) {
+  const segmentSet = (path) => new Set(path.nodes.slice(0, -1).map((nodeId, index) => {
+    const nextId = path.nodes[index + 1];
+    return nodeId < nextId ? `${nodeId}:${nextId}` : `${nextId}:${nodeId}`;
+  }));
+  const aEdges = segmentSet(a);
+  const bEdges = segmentSet(b);
+  const intersection = [...aEdges].filter((edge) => bEdges.has(edge)).length;
+  const union = new Set([...aEdges, ...bEdges]).size;
+  return union ? intersection / union : 1;
+}
+
+function kBestItineraries(points, limit = MAX_ROUTE_OPTIONS) {
+  const legOptions = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const options = kShortestPaths(points[index], points[index + 1]);
+    if (!options.length) return [];
+    legOptions.push(options);
+  }
+
+  const combinations = new MinHeap();
+  const seen = new Set();
+  const enqueue = (indexes) => {
+    const key = indexes.join(':');
+    if (seen.has(key)) return;
+    seen.add(key);
+    combinations.push({
+      indexes,
+      distance: indexes.reduce((sum, optionIndex, legIndex) => sum + legOptions[legIndex][optionIndex].distance, 0)
+    });
+  };
+  enqueue(Array(legOptions.length).fill(0));
+
+  const itineraries = [];
+  let inspected = 0;
+  while (combinations.items.length && itineraries.length < limit && inspected < 180) {
+    inspected += 1;
+    const combination = combinations.pop();
+    const segmentPaths = combination.indexes.map((optionIndex, legIndex) => legOptions[legIndex][optionIndex]);
+    const itinerary = combineSegmentPaths(points, segmentPaths);
+    if (itineraries.every((existing) => edgeSimilarity(existing, itinerary) <= .9)) itineraries.push(itinerary);
+
+    combination.indexes.forEach((optionIndex, legIndex) => {
+      if (optionIndex + 1 >= legOptions[legIndex].length) return;
+      const nextIndexes = [...combination.indexes];
+      nextIndexes[legIndex] += 1;
+      enqueue(nextIndexes);
+    });
+  }
+  return itineraries;
 }
 
 function formatClass(value) {
@@ -1201,24 +1384,66 @@ function routeLegMetrics(path, index) {
   return { edge, a, b, ...calculateLegMetrics(edge, a, b, state.hyperdriveClass) };
 }
 
-function renderRoute(path, start, end, refocus = true) {
-  const result = $('#routeResult');
-  if (!path) {
-    result.classList.remove('hidden');
-    result.innerHTML = `<p class="route-warning">${escapeHtml(t('route.noConnection'))}</p>`;
-    state.currentRoute = null;
-    return;
-  }
+function routeMetrics(path) {
   const legs = path.edges.map((_, index) => routeLegMetrics(path, index));
   const totals = legs.reduce((sum, leg) => ({
     parsecs: sum.parsecs + leg.parsecs,
     minHours: sum.minHours + leg.minHours,
     maxHours: sum.maxHours + leg.maxHours
   }), { parsecs: 0, minHours: 0, maxHours: 0 });
+  return {
+    legs,
+    totals,
+    localLinks: path.edges.filter((edge) => edge.kind !== 'route').length
+  };
+}
+
+function routeLetter(index) {
+  return String.fromCharCode(65 + Math.min(index, 25));
+}
+
+function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true) {
+  const result = $('#routeResult');
+  if (!itineraries?.length) {
+    result.classList.remove('hidden');
+    result.innerHTML = `<p class="route-warning">${escapeHtml(t('route.noConnection'))}</p>`;
+    state.currentRoute = null;
+    state.highlightedPath = null;
+    requestDraw();
+    return;
+  }
+
+  const selectedIndex = Math.max(0, Math.min(activeIndex, itineraries.length - 1));
+  const path = itineraries[selectedIndex];
+  const { legs, totals } = routeMetrics(path);
   const hasTransfers = path.edges.some((edge) => edge.kind !== 'route');
+  const start = points[0];
+  const end = points[points.length - 1];
+  const stopCount = Math.max(0, points.length - 2);
+  const optionCards = itineraries.length > 1 ? `
+    <div class="route-options-heading">${escapeHtml(t('route.availableRoutes'))}</div>
+    <div class="route-options" role="tablist" aria-label="${escapeHtml(t('route.availableRoutes'))}">
+      ${itineraries.map((option, index) => {
+        const metrics = routeMetrics(option);
+        const letter = routeLetter(index);
+        const jumpLabel = t(option.edges.length === 1 ? 'route.jumps.one' : 'route.jumps.many', { count: option.edges.length });
+        const localLabel = metrics.localLinks
+          ? t(metrics.localLinks === 1 ? 'route.localLinks.one' : 'route.localLinks.many', { count: metrics.localLinks })
+          : '';
+        return `<button class="route-option ${index === selectedIndex ? 'active' : ''}" type="button" role="tab" aria-selected="${index === selectedIndex}" aria-label="${escapeHtml(t('route.showOption', { letter }))}" data-route-option="${index}">
+          <span class="route-option-title"><strong>${escapeHtml(t('route.option', { letter }))}</strong>${index === 0 ? `<em>${escapeHtml(t('route.recommended'))}</em>` : ''}</span>
+          <b>${escapeHtml(formatTravelTime(metrics.totals.minHours, metrics.totals.maxHours))}</b>
+          <small>${escapeHtml(formatParsecs(metrics.totals.parsecs))} · ${escapeHtml(jumpLabel)}${localLabel ? ` · ${escapeHtml(localLabel)}` : ''}</small>
+        </button>`;
+      }).join('')}
+    </div>` : '';
+
   result.classList.remove('hidden');
   result.innerHTML = `
-    <div class="route-summary"><strong>${escapeHtml(start.name)} → ${escapeHtml(end.name)}</strong><span>${escapeHtml(t(path.edges.length === 1 ? 'route.jumps.one' : 'route.jumps.many', { count: path.edges.length }))}</span></div>
+    ${optionCards}
+    <div class="route-itinerary-label">${escapeHtml(t('route.itinerary'))}</div>
+    <div class="route-itinerary-points">${points.map((point, index) => `<span><b>${routeLetter(index)}</b>${escapeHtml(point.name)}</span>${index < points.length - 1 ? '<i aria-hidden="true">›</i>' : ''}`).join('')}</div>
+    <div class="route-summary"><strong>${escapeHtml(start.name)} → ${escapeHtml(end.name)}</strong><span>${stopCount ? `${escapeHtml(t(stopCount === 1 ? 'route.stops.one' : 'route.stops.many', { count: stopCount }))} · ` : ''}${escapeHtml(t(path.edges.length === 1 ? 'route.jumps.one' : 'route.jumps.many', { count: path.edges.length }))}</span></div>
     <div class="route-totals">
       <div class="route-total"><span>${escapeHtml(t('route.totalDistance'))}</span><strong>${formatParsecs(totals.parsecs)}</strong></div>
       <div class="route-total"><span>${escapeHtml(t('route.totalTime', { class: formatClass(state.hyperdriveClass) }))}</span><strong>${formatTravelTime(totals.minHours, totals.maxHours)}</strong></div>
@@ -1231,15 +1456,20 @@ function renderRoute(path, start, end, refocus = true) {
         <div class="route-leg-metrics"><span>${formatParsecs(leg.parsecs)}</span><span>${formatLightYears(leg.lightYears)}</span><span>${formatTravelTime(leg.minHours, leg.maxHours)}</span></div>
       </div>`;
     }).join('')}</div>`;
-  state.currentRoute = { path, start, end };
+  result.querySelectorAll('[data-route-option]').forEach((button) => button.addEventListener('click', () => {
+    selectRouteAlternative(Number(button.dataset.routeOption));
+  }));
+  state.currentRoute = { itineraries, points, activeIndex: selectedIndex };
   state.highlightedPath = path;
   state.routeFrom = start;
   state.routeTo = end;
-  if (refocus) {
-    fitPath(path.nodes);
-  } else {
-    requestDraw();
-  }
+  if (refocus) fitPath(path.nodes);
+  else requestDraw();
+}
+
+function selectRouteAlternative(index) {
+  if (!state.currentRoute || index === state.currentRoute.activeIndex) return;
+  renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, index, true);
 }
 
 function calculateRoute() {
@@ -1249,18 +1479,192 @@ function calculateRoute() {
     showToast(t('route.validEndpoints'));
     return;
   }
-  if (start.id === end.id) {
+  const waypointLocations = state.routeWaypoints.map((waypoint) => {
+    const input = $(`#routeStopInput${waypoint.uid}`);
+    const location = input ? resolveInput(input) : waypoint.location;
+    waypoint.location = location;
+    waypoint.value = input?.value || waypoint.value || '';
+    return location;
+  });
+  if (waypointLocations.some((location) => !location)) {
+    showToast(t('route.validStops'));
+    return;
+  }
+  const points = [start, ...waypointLocations, end];
+  if (points.length === 2 && start.id === end.id) {
     showToast(t('route.sameEndpoint'));
     return;
   }
-  renderRoute(shortestPath(start, end), start, end);
+  if (points.some((point, index) => index > 0 && point.id === points[index - 1].id)) {
+    showToast(t('route.sameAdjacentPoint'));
+    return;
+  }
+  state.routeFrom = start;
+  state.routeTo = end;
+  renderRouteOptions(kBestItineraries(points), points);
+}
+
+function waypointTarget(uid) {
+  return `stop:${uid}`;
+}
+
+function waypointFromTarget(target) {
+  if (!target?.startsWith('stop:')) return null;
+  const uid = Number(target.slice(5));
+  return state.routeWaypoints.find((waypoint) => waypoint.uid === uid) || null;
+}
+
+function routeTargetLabel(target) {
+  if (target === 'from') return t('route.originA');
+  if (target === 'to') return t('route.destinationB', { letter: routeLetter(state.routeWaypoints.length + 1) });
+  const waypoint = waypointFromTarget(target);
+  const index = state.routeWaypoints.indexOf(waypoint);
+  return t('route.stopTarget', { number: index + 1, letter: routeLetter(index + 1) });
+}
+
+function nextRouteTarget(target) {
+  const targets = ['from', ...state.routeWaypoints.map((waypoint) => waypointTarget(waypoint.uid)), 'to'];
+  const index = targets.indexOf(target);
+  return index >= 0 && index < targets.length - 1 ? targets[index + 1] : null;
+}
+
+function updateRouteEndpointLabels() {
+  const destinationMarker = $('#routeToMarker');
+  if (destinationMarker) destinationMarker.textContent = routeLetter(state.routeWaypoints.length + 1);
+  const addButton = $('#addRouteStop');
+  if (addButton) addButton.disabled = state.routeWaypoints.length >= MAX_ROUTE_STOPS;
+  if (state.routePickTarget) {
+    const endpoint = routeTargetLabel(state.routePickTarget);
+    $('#routePickNote').textContent = t('route.pickActive', { endpoint });
+    $('#mapHint').textContent = t('route.mapPickHint', { endpoint });
+  }
+}
+
+function syncWaypointInputs() {
+  state.routeWaypoints.forEach((waypoint) => {
+    const input = $(`#routeStopInput${waypoint.uid}`);
+    if (!input) return;
+    waypoint.value = input.value;
+    waypoint.location = resolveInput(input);
+  });
+}
+
+function renderRouteStops() {
+  const container = $('#routeStops');
+  if (!container) return;
+  container.innerHTML = state.routeWaypoints.map((waypoint, index) => {
+    const number = index + 1;
+    const target = waypointTarget(waypoint.uid);
+    const value = waypoint.value || waypoint.location?.name || '';
+    return `<div class="route-stop" data-waypoint-id="${waypoint.uid}">
+      <div class="route-stop-heading">
+        <button class="route-stop-drag" type="button" draggable="true" data-drag-stop="${waypoint.uid}" aria-label="${escapeHtml(t('route.dragStop', { number }))}" title="${escapeHtml(t('route.dragStop', { number }))}">⠿</button>
+        <label class="field-label" for="routeStopInput${waypoint.uid}">${escapeHtml(t('route.stop', { number }))}</label>
+        <div class="route-stop-controls">
+          <button type="button" data-move-stop="${waypoint.uid}" data-direction="-1" aria-label="${escapeHtml(t('route.moveStopUp', { number }))}" title="${escapeHtml(t('route.moveStopUp', { number }))}" ${index === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" data-move-stop="${waypoint.uid}" data-direction="1" aria-label="${escapeHtml(t('route.moveStopDown', { number }))}" title="${escapeHtml(t('route.moveStopDown', { number }))}" ${index === state.routeWaypoints.length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" data-remove-stop="${waypoint.uid}" aria-label="${escapeHtml(t('route.removeStop', { number }))}" title="${escapeHtml(t('route.removeStop', { number }))}">×</button>
+        </div>
+      </div>
+      <div class="search-wrap route-search waypoint-search ${state.routePickTarget === target ? 'pick-active' : ''}" data-route-target="${target}">
+        <span class="route-marker stop">${routeLetter(index + 1)}</span>
+        <input id="routeStopInput${waypoint.uid}" value="${escapeHtml(value)}" autocomplete="off" placeholder="${escapeHtml(t('route.stopPlaceholder'))}">
+        <button class="map-pick-button" data-route-pick="${target}" type="button" aria-label="${escapeHtml(t('route.pickStop', { number }))}" title="${escapeHtml(t('route.pickOnMap'))}">⌖</button>
+        <div class="suggestions" id="routeStopSuggestions${waypoint.uid}" role="listbox"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  state.routeWaypoints.forEach((waypoint) => {
+    const target = waypointTarget(waypoint.uid);
+    const input = $(`#routeStopInput${waypoint.uid}`);
+    const suggestions = $(`#routeStopSuggestions${waypoint.uid}`);
+    attachAutocomplete(input, suggestions, (location) => setRouteEndpoint(target, location));
+    input.addEventListener('focus', () => setRoutePickTarget(target));
+    input.addEventListener('input', () => {
+      waypoint.value = input.value;
+      waypoint.location = null;
+      invalidateRoute();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') setTimeout(calculateRoute, 0);
+    });
+  });
+
+  container.querySelectorAll('[data-route-pick]').forEach((button) => button.addEventListener('click', () => setRoutePickTarget(button.dataset.routePick, true)));
+  container.querySelectorAll('[data-remove-stop]').forEach((button) => button.addEventListener('click', () => removeRouteStop(Number(button.dataset.removeStop))));
+  container.querySelectorAll('[data-move-stop]').forEach((button) => button.addEventListener('click', () => moveRouteStop(Number(button.dataset.moveStop), Number(button.dataset.direction))));
+  container.querySelectorAll('[data-drag-stop]').forEach((handle) => handle.addEventListener('dragstart', (event) => {
+    syncWaypointInputs();
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', handle.dataset.dragStop);
+  }));
+  container.querySelectorAll('[data-waypoint-id]').forEach((row) => {
+    row.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', (event) => {
+      event.preventDefault();
+      row.classList.remove('drag-over');
+      reorderRouteStop(Number(event.dataTransfer.getData('text/plain')), Number(row.dataset.waypointId));
+    });
+  });
+  updateRouteEndpointLabels();
+}
+
+function addRouteStop() {
+  if (state.routeWaypoints.length >= MAX_ROUTE_STOPS) {
+    showToast(t('route.maximumStops', { count: MAX_ROUTE_STOPS }));
+    return;
+  }
+  syncWaypointInputs();
+  const waypoint = { uid: state.nextWaypointId, location: null, value: '' };
+  state.nextWaypointId += 1;
+  state.routeWaypoints.push(waypoint);
+  renderRouteStops();
+  invalidateRoute();
+  $(`#routeStopInput${waypoint.uid}`)?.focus();
+}
+
+function removeRouteStop(uid) {
+  syncWaypointInputs();
+  if (state.routePickTarget === waypointTarget(uid)) clearRoutePickTarget();
+  state.routeWaypoints = state.routeWaypoints.filter((waypoint) => waypoint.uid !== uid);
+  renderRouteStops();
+  invalidateRoute();
+}
+
+function moveRouteStop(uid, direction) {
+  syncWaypointInputs();
+  const index = state.routeWaypoints.findIndex((waypoint) => waypoint.uid === uid);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= state.routeWaypoints.length) return;
+  [state.routeWaypoints[index], state.routeWaypoints[nextIndex]] = [state.routeWaypoints[nextIndex], state.routeWaypoints[index]];
+  renderRouteStops();
+  invalidateRoute();
+}
+
+function reorderRouteStop(uid, targetUid) {
+  if (uid === targetUid) return;
+  syncWaypointInputs();
+  const fromIndex = state.routeWaypoints.findIndex((waypoint) => waypoint.uid === uid);
+  const originalTargetIndex = state.routeWaypoints.findIndex((waypoint) => waypoint.uid === targetUid);
+  if (fromIndex < 0) return;
+  const [waypoint] = state.routeWaypoints.splice(fromIndex, 1);
+  const targetIndex = state.routeWaypoints.findIndex((item) => item.uid === targetUid);
+  const insertIndex = fromIndex < originalTargetIndex ? targetIndex + 1 : targetIndex;
+  state.routeWaypoints.splice(Math.max(0, insertIndex), 0, waypoint);
+  renderRouteStops();
+  invalidateRoute();
 }
 
 function setRoutePickTarget(kind, closePanel = false) {
   state.routePickTarget = kind;
-  $('#routeFromWrap').classList.toggle('pick-active', kind === 'from');
-  $('#routeToWrap').classList.toggle('pick-active', kind === 'to');
-  const label = kind === 'from' ? t('route.originA') : t('route.destinationB');
+  $$('.route-search').forEach((wrap) => wrap.classList.toggle('pick-active', wrap.dataset.routeTarget === kind));
+  const label = routeTargetLabel(kind);
   const note = $('#routePickNote');
   note.textContent = t('route.pickActive', { endpoint: label });
   note.classList.add('active');
@@ -1272,8 +1676,7 @@ function setRoutePickTarget(kind, closePanel = false) {
 
 function clearRoutePickTarget() {
   state.routePickTarget = null;
-  $('#routeFromWrap').classList.remove('pick-active');
-  $('#routeToWrap').classList.remove('pick-active');
+  $$('.route-search').forEach((wrap) => wrap.classList.remove('pick-active'));
   $('#routePickNote').textContent = t('route.pickNote');
   $('#routePickNote').classList.remove('active');
   $('#mapHint').textContent = t('map.hint');
@@ -1289,18 +1692,26 @@ function invalidateRoute() {
 }
 
 function setRouteEndpoint(kind, location, fromMap = false) {
-  const input = kind === 'from' ? $('#routeFrom') : $('#routeTo');
+  const waypoint = waypointFromTarget(kind);
+  const input = kind === 'from' ? $('#routeFrom') : kind === 'to' ? $('#routeTo') : $(`#routeStopInput${waypoint?.uid}`);
+  if (!input) return;
   input.value = location.name;
   input.dataset.locationId = location.id;
-  state[kind === 'from' ? 'routeFrom' : 'routeTo'] = location;
+  if (kind === 'from') state.routeFrom = location;
+  else if (kind === 'to') state.routeTo = location;
+  else {
+    waypoint.location = location;
+    waypoint.value = location.name;
+  }
   invalidateRoute();
-  if (fromMap && kind === 'from') {
-    setRoutePickTarget('to');
-    showToast(t('route.selectedOrigin', { name: location.name }));
+  if (fromMap) {
+    const nextTarget = nextRouteTarget(kind);
+    if (nextTarget) setRoutePickTarget(nextTarget);
+    else clearRoutePickTarget();
+    showToast(t('route.selectedPoint', { name: location.name, endpoint: routeTargetLabel(kind) }));
+    if (!nextTarget && window.innerWidth <= 880) $('#sidebar').classList.add('open');
   } else {
     clearRoutePickTarget();
-    if (fromMap) showToast(t('route.selectedDestination', { name: location.name }));
-    if (fromMap && window.innerWidth <= 880) $('#sidebar').classList.add('open');
   }
   requestDraw();
 }
@@ -1311,6 +1722,7 @@ function clearRoute() {
     delete input.dataset.locationId;
   }
   state.routeFrom = null;
+  state.routeWaypoints = [];
   state.routeTo = null;
   state.currentRoute = null;
   state.highlightedPath = null;
@@ -1318,6 +1730,7 @@ function clearRoute() {
   clearRoutePickTarget();
   $('#routeResult').classList.add('hidden');
   $('#routeResult').innerHTML = '';
+  renderRouteStops();
   requestDraw();
 }
 
@@ -1411,15 +1824,22 @@ function bindUI() {
   });
 
   $('#swapRoute').addEventListener('click', () => {
+    syncWaypointInputs();
     const from = $('#routeFrom');
     const to = $('#routeTo');
     [from.value, to.value] = [to.value, from.value];
     const fromId = from.dataset.locationId;
-    from.dataset.locationId = to.dataset.locationId || '';
-    to.dataset.locationId = fromId || '';
+    const toId = to.dataset.locationId;
+    if (toId) from.dataset.locationId = toId;
+    else delete from.dataset.locationId;
+    if (fromId) to.dataset.locationId = fromId;
+    else delete to.dataset.locationId;
     [state.routeFrom, state.routeTo] = [state.routeTo, state.routeFrom];
+    state.routeWaypoints.reverse();
+    renderRouteStops();
     invalidateRoute();
   });
+  $('#addRouteStop').addEventListener('click', addRouteStop);
   $('#calculateRoute').addEventListener('click', calculateRoute);
   $('#clearRoute').addEventListener('click', clearRoute);
   $('#routeFrom').addEventListener('focus', () => setRoutePickTarget('from'));
@@ -1430,7 +1850,7 @@ function bindUI() {
   $('#hyperdriveClass').addEventListener('input', (event) => {
     state.hyperdriveClass = Number(event.target.value);
     $('#hyperdriveValue').textContent = t('route.class', { value: formatClass(state.hyperdriveClass) });
-    if (state.currentRoute) renderRoute(state.currentRoute.path, state.currentRoute.start, state.currentRoute.end, false);
+    if (state.currentRoute) renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, state.currentRoute.activeIndex, false);
   });
   $('#routeFrom').addEventListener('keydown', (event) => { if (event.key === 'Enter') setTimeout(calculateRoute, 0); });
   $('#routeTo').addEventListener('keydown', (event) => { if (event.key === 'Enter') setTimeout(calculateRoute, 0); });
