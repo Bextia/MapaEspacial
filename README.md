@@ -12,7 +12,7 @@ The atlas combines a high-resolution 4,320 × 4,320 map with a searchable catalo
 - Pan, zoom, reset the view, or jump to exact pixel coordinates.
 - Filter locations by galactic region and object type.
 - Toggle the grid, hyperroutes, regions, sectors, and dynamic location layer independently.
-- Distinguish planets and systems (`●`), space stations (`¤`), and miscellaneous objects (`§`).
+- Distinguish planets and systems (●), space stations (¤), and miscellaneous objects (§).
 - Display location names and symbols dynamically so the visible marker and its interactive coordinates always match.
 - Show selected locations with an animated yellow halo and full-map crosshair.
 - Link duplicate appearances in the main map and the Arkanis, Javin, and Kessel inset maps.
