@@ -1,4 +1,4 @@
-import { calculateLegMetrics } from './route-math.js';
+import { calculateLegMetrics, MAJOR_ROUTE_NAMES } from './route-math.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -7,6 +7,15 @@ const MAP_FONT = '"Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow"
 const MAX_ROUTE_STOPS = 8;
 const MAX_ROUTE_OPTIONS = 3;
 const CANDIDATE_PATHS_PER_LEG = 6;
+const ROUTE_CRITERIA = new Set(['fastest', 'shortest', 'fewerLocal', 'major']);
+const ROUTE_COLORS = ['#ff4157', '#a970ff', '#ff9d42'];
+const SAVED_ROUTES = [
+  { from: 'Tatooine', to: 'Alderaan', shipKey: 'falcon', hyperdriveClass: 0.5 },
+  { from: 'Alderaan', to: 'Yavin', shipKey: 'falcon', hyperdriveClass: 0.5 },
+  { from: 'Alderaan', to: 'Yavin', shipKey: 'starDestroyer', hyperdriveClass: 2 },
+  { from: 'Alderaan', to: 'Yavin', shipKey: 'deathStar', hyperdriveClass: 4 },
+  { from: 'Lothal', to: 'Coruscant', shipKey: 'starDestroyer', hyperdriveClass: 2 }
+];
 
 const translations = {
   es: {
@@ -49,6 +58,9 @@ const translations = {
     'route.swap': 'Intercambiar origen y destino',
     'route.reverse': 'Invertir el orden del trayecto',
     'route.addStop': 'Añadir parada',
+    'route.optimizeStops': 'Optimizar orden',
+    'route.optimizeNeedsStops': 'Añade al menos dos paradas válidas para optimizar su orden.',
+    'route.optimized': 'Paradas reordenadas según la prioridad seleccionada.',
     'route.stop': 'Parada {number}',
     'route.stopPlaceholder': 'Planeta de la parada',
     'route.pickStop': 'Elegir la parada {number} en el mapa',
@@ -68,6 +80,12 @@ const translations = {
     'route.fast': '0,5 · muy rápido',
     'route.slow': '5 · lento',
     'route.hyperdriveHelp': 'Una clase menor reduce el tiempo de viaje.',
+    'route.criterionLabel': 'Prioridad de la ruta',
+    'route.criterion.fastest': 'Más rápida',
+    'route.criterion.shortest': 'Más corta',
+    'route.criterion.fewerLocal': 'Menos enlaces locales',
+    'route.criterion.major': 'Priorizar rutas mayores',
+    'route.criterionHelp': 'La opción más rápida usa el tiempo medio cuando existe un intervalo.',
     'route.calculate': 'Calcular ruta',
     'route.clear': 'Limpiar',
     'route.noConnection': 'No se ha encontrado conexión entre ambos puntos.',
@@ -75,7 +93,7 @@ const translations = {
     'route.jumps.many': '{count} saltos',
     'route.totalDistance': 'Distancia total',
     'route.totalTime': 'Tiempo total · clase {class}',
-    'route.transferWarning': 'Incluye enlaces locales: no son hiperrutas nominales y se muestran en ámbar discontinuo.',
+    'route.transferWarning': 'Incluye enlaces locales: no son hiperrutas nominales y se muestran con trazo discontinuo.',
     'route.validEndpoints': 'Selecciona un origen y un destino válidos.',
     'route.validStops': 'Selecciona una localización válida para cada parada.',
     'route.sameAdjacentPoint': 'Dos puntos consecutivos del trayecto no pueden ser iguales.',
@@ -92,6 +110,19 @@ const translations = {
     'route.stops.many': '{count} paradas',
     'route.localLinks.one': '1 enlace local',
     'route.localLinks.many': '{count} enlaces locales',
+    'route.copy': 'Copiar ruta',
+    'route.copyLink': 'Copiar enlace',
+    'route.copied': 'Itinerario copiado.',
+    'route.linkCopied': 'Enlace compartible copiado.',
+    'route.copyFailed': 'No se pudo copiar automáticamente.',
+    'saved.open': 'Rutas guardadas',
+    'saved.eyebrow': 'ACCESOS RÁPIDOS',
+    'saved.title': 'Rutas guardadas',
+    'saved.description': 'Selecciona un trayecto y una nave para cargarlo directamente en el planificador.',
+    'saved.ship.falcon': 'Halcón Milenario',
+    'saved.ship.starDestroyer': 'Destructor Estelar',
+    'saved.ship.deathStar': 'Estrella de la Muerte',
+    'saved.load': 'Cargar {route} con {ship}',
     'travel.major': 'Ruta mayor',
     'travel.deepCore': 'Núcleo Profundo',
     'travel.outer': 'Espacio exterior / inexplorado',
@@ -191,6 +222,9 @@ const translations = {
     'route.swap': 'Swap origin and destination',
     'route.reverse': 'Reverse journey order',
     'route.addStop': 'Add stop',
+    'route.optimizeStops': 'Optimize order',
+    'route.optimizeNeedsStops': 'Add at least two valid stops to optimize their order.',
+    'route.optimized': 'Stops reordered using the selected priority.',
     'route.stop': 'Stop {number}',
     'route.stopPlaceholder': 'Stop location',
     'route.pickStop': 'Choose stop {number} on the map',
@@ -210,6 +244,12 @@ const translations = {
     'route.fast': '0.5 · very fast',
     'route.slow': '5 · slow',
     'route.hyperdriveHelp': 'A lower class reduces travel time.',
+    'route.criterionLabel': 'Route priority',
+    'route.criterion.fastest': 'Fastest',
+    'route.criterion.shortest': 'Shortest',
+    'route.criterion.fewerLocal': 'Fewer local links',
+    'route.criterion.major': 'Prioritize major routes',
+    'route.criterionHelp': 'Fastest uses the average travel time when a range applies.',
     'route.calculate': 'Calculate route',
     'route.clear': 'Clear',
     'route.noConnection': 'No connection was found between these two points.',
@@ -217,7 +257,7 @@ const translations = {
     'route.jumps.many': '{count} jumps',
     'route.totalDistance': 'Total distance',
     'route.totalTime': 'Total time · class {class}',
-    'route.transferWarning': 'Includes local links: these are not named hyperroutes and are shown as dashed amber lines.',
+    'route.transferWarning': 'Includes local links: these are not named hyperroutes and are shown with a dashed line.',
     'route.validEndpoints': 'Select a valid origin and destination.',
     'route.validStops': 'Select a valid location for every stop.',
     'route.sameAdjacentPoint': 'Two consecutive journey points cannot be the same.',
@@ -234,6 +274,19 @@ const translations = {
     'route.stops.many': '{count} stops',
     'route.localLinks.one': '1 local link',
     'route.localLinks.many': '{count} local links',
+    'route.copy': 'Copy route',
+    'route.copyLink': 'Copy link',
+    'route.copied': 'Itinerary copied.',
+    'route.linkCopied': 'Shareable link copied.',
+    'route.copyFailed': 'Could not copy automatically.',
+    'saved.open': 'Saved routes',
+    'saved.eyebrow': 'QUICK PICKS',
+    'saved.title': 'Saved routes',
+    'saved.description': 'Choose a journey and ship to load it directly into the planner.',
+    'saved.ship.falcon': 'Millennium Falcon',
+    'saved.ship.starDestroyer': 'Star Destroyer',
+    'saved.ship.deathStar': 'Death Star',
+    'saved.load': 'Load {route} with {ship}',
     'travel.major': 'Major hyperroute',
     'travel.deepCore': 'Deep Core',
     'travel.outer': 'Outer / unexplored space',
@@ -314,6 +367,10 @@ const regionNames = {
 
 function initialLocale() {
   try {
+    const sharedLocale = new URL(window.location.href).searchParams.get('lang');
+    if (sharedLocale === 'en' || sharedLocale === 'es') return sharedLocale;
+  } catch { /* Use the stored language when the URL is unavailable. */ }
+  try {
     return localStorage.getItem('galactic-atlas-locale') === 'en' ? 'en' : 'es';
   } catch {
     return 'es';
@@ -388,6 +445,8 @@ const state = {
   hovered: null,
   selected: null,
   highlightedPath: null,
+  highlightedRouteIndex: 0,
+  previewRouteIndex: null,
   currentRoute: null,
   routePickTarget: null,
   routeFrom: null,
@@ -395,6 +454,8 @@ const state = {
   routeTo: null,
   nextWaypointId: 1,
   hyperdriveClass: 1,
+  routeCriterion: 'fastest',
+  restoringUrl: false,
   coordinateTarget: null,
   activeType: 'all',
   activeRegion: 'all',
@@ -471,6 +532,7 @@ function applyLocale(locale, persist = true) {
     populateRegions();
     updateFilterCount();
     renderRouteStops();
+    renderSavedRoutes();
     updateRouteEndpointLabels();
     if (state.selected && state.activeMode === 'explore') showDetail(state.selected);
     if (state.currentRoute) renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, state.currentRoute.activeIndex, false);
@@ -487,6 +549,7 @@ function applyLocale(locale, persist = true) {
   $$('.suggestions').forEach((node) => node.classList.remove('open'));
   const wikiDialog = $('#wikiDialog');
   if (wikiDialog.open && state.currentWikiLocation) loadWikiLanguage(state.currentWikiLocation, state.locale);
+  if (state.data) syncUrlState();
 }
 
 function isVisible(location) {
@@ -691,6 +754,7 @@ function draw() {
   if (state.layerVisibility.planets) ctx.drawImage(backgroundLayerImages.planetsBackground, 0, 0, MAP_SIZE, MAP_SIZE);
 
   if (state.highlightedPath) {
+    const routeColor = ROUTE_COLORS[state.highlightedRouteIndex] || ROUTE_COLORS[0];
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -706,7 +770,7 @@ function draw() {
         ctx.moveTo(from.px, from.py);
         ctx.lineTo(to.px, to.py);
         ctx.lineWidth = (edge.kind === 'route' ? 4.5 : 3) / state.view.scale;
-        ctx.strokeStyle = edge.kind === 'route' ? '#ff4157' : '#ffb865';
+        ctx.strokeStyle = routeColor;
         ctx.setLineDash(edge.kind === 'route' ? [] : [7 / state.view.scale, 5 / state.view.scale]);
         ctx.shadowColor = ctx.strokeStyle;
         ctx.shadowBlur = 8 / state.view.scale;
@@ -1183,7 +1247,20 @@ class MinHeap {
   }
 }
 
-function shortestPath(start, end, { bannedEdges = new Set(), bannedNodes = new Set() } = {}) {
+function edgeOptimizationCost(edge, criterion = state.routeCriterion) {
+  const a = state.byId.get(edge.a);
+  const b = state.byId.get(edge.b);
+  const metrics = calculateLegMetrics(edge, a, b, 1);
+  if (criterion === 'shortest') return metrics.parsecs;
+  if (criterion === 'fewerLocal') return metrics.parsecs + (edge.kind === 'route' ? 0 : 100_000_000);
+  if (criterion === 'major') {
+    if (edge.kind !== 'route') return metrics.parsecs * 4 + 50_000;
+    return metrics.parsecs * (MAJOR_ROUTE_NAMES.has(edge.route) ? .55 : 1.4);
+  }
+  return (metrics.minHours + metrics.maxHours) / 2;
+}
+
+function shortestPath(start, end, { bannedEdges = new Set(), bannedNodes = new Set(), criterion = state.routeCriterion } = {}) {
   const n = state.locations.length;
   const dist = new Float64Array(n);
   dist.fill(Infinity);
@@ -1202,7 +1279,7 @@ function shortestPath(start, end, { bannedEdges = new Set(), bannedNodes = new S
     for (const step of state.adjacency[current.id]) {
       if (bannedEdges.has(step.edgeIndex) || bannedNodes.has(step.to)) continue;
       const edge = state.data.edges[step.edgeIndex];
-      const nextDistance = current.distance + edge.weight;
+      const nextDistance = current.distance + edgeOptimizationCost(edge, criterion);
       if (nextDistance < dist[step.to]) {
         dist[step.to] = nextDistance;
         previous[step.to] = current.id;
@@ -1231,12 +1308,12 @@ function pathKey(path) {
   return path.nodes.join('>');
 }
 
-function pathDistance(edgeIndexes) {
-  return edgeIndexes.reduce((sum, edgeIndex) => sum + state.data.edges[edgeIndex].weight, 0);
+function pathDistance(edgeIndexes, criterion = state.routeCriterion) {
+  return edgeIndexes.reduce((sum, edgeIndex) => sum + edgeOptimizationCost(state.data.edges[edgeIndex], criterion), 0);
 }
 
-function kShortestPaths(start, end, limit = CANDIDATE_PATHS_PER_LEG) {
-  const first = shortestPath(start, end);
+function kShortestPaths(start, end, limit = CANDIDATE_PATHS_PER_LEG, criterion = state.routeCriterion) {
+  const first = shortestPath(start, end, { criterion });
   if (!first) return [];
   const accepted = [first];
   const acceptedKeys = new Set([pathKey(first)]);
@@ -1259,7 +1336,7 @@ function kShortestPaths(start, end, limit = CANDIDATE_PATHS_PER_LEG) {
       }
       const bannedNodes = new Set(rootNodes.slice(0, -1));
       const spurStart = state.byId.get(rootNodes[rootNodes.length - 1]);
-      const spurPath = shortestPath(spurStart, end, { bannedEdges, bannedNodes });
+      const spurPath = shortestPath(spurStart, end, { bannedEdges, bannedNodes, criterion });
       if (!spurPath) continue;
       const nodes = [...rootNodes.slice(0, -1), ...spurPath.nodes];
       if (new Set(nodes).size !== nodes.length) continue;
@@ -1268,7 +1345,7 @@ function kShortestPaths(start, end, limit = CANDIDATE_PATHS_PER_LEG) {
         nodes,
         edgeIndexes,
         edges: edgeIndexes.map((index) => state.data.edges[index]),
-        distance: pathDistance(edgeIndexes)
+        distance: pathDistance(edgeIndexes, criterion)
       };
       const key = pathKey(path);
       if (acceptedKeys.has(key) || candidateKeys.has(key)) continue;
@@ -1314,10 +1391,10 @@ function edgeSimilarity(a, b) {
   return union ? intersection / union : 1;
 }
 
-function kBestItineraries(points, limit = MAX_ROUTE_OPTIONS) {
+function kBestItineraries(points, limit = MAX_ROUTE_OPTIONS, criterion = state.routeCriterion) {
   const legOptions = [];
   for (let index = 0; index < points.length - 1; index += 1) {
-    const options = kShortestPaths(points[index], points[index + 1]);
+    const options = kShortestPaths(points[index], points[index + 1], CANDIDATE_PATHS_PER_LEG, criterion);
     if (!options.length) return [];
     legOptions.push(options);
   }
@@ -1352,6 +1429,58 @@ function kBestItineraries(points, limit = MAX_ROUTE_OPTIONS) {
     });
   }
   return itineraries;
+}
+
+function optimizedWaypointOrder(start, waypoints, end, criterion = state.routeCriterion) {
+  const count = waypoints.length;
+  if (count < 2) return waypoints.map((_, index) => index);
+  const pathCache = new Map();
+  const costBetween = (a, b) => {
+    const key = a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
+    if (!pathCache.has(key)) pathCache.set(key, shortestPath(a, b, { criterion })?.distance ?? Infinity);
+    return pathCache.get(key);
+  };
+  const size = 1 << count;
+  const costs = Array.from({ length: size }, () => new Float64Array(count).fill(Infinity));
+  const previous = Array.from({ length: size }, () => new Int16Array(count).fill(-1));
+  for (let index = 0; index < count; index += 1) costs[1 << index][index] = costBetween(start, waypoints[index]);
+
+  for (let mask = 1; mask < size; mask += 1) {
+    for (let last = 0; last < count; last += 1) {
+      if (!(mask & (1 << last)) || !Number.isFinite(costs[mask][last])) continue;
+      for (let next = 0; next < count; next += 1) {
+        if (mask & (1 << next)) continue;
+        const nextMask = mask | (1 << next);
+        const candidate = costs[mask][last] + costBetween(waypoints[last], waypoints[next]);
+        if (candidate < costs[nextMask][next]) {
+          costs[nextMask][next] = candidate;
+          previous[nextMask][next] = last;
+        }
+      }
+    }
+  }
+
+  const fullMask = size - 1;
+  let bestLast = -1;
+  let bestCost = Infinity;
+  for (let last = 0; last < count; last += 1) {
+    const candidate = costs[fullMask][last] + costBetween(waypoints[last], end);
+    if (candidate < bestCost) {
+      bestCost = candidate;
+      bestLast = last;
+    }
+  }
+  if (bestLast < 0) return null;
+  const order = [];
+  let mask = fullMask;
+  let last = bestLast;
+  while (last >= 0) {
+    order.push(last);
+    const prior = previous[mask][last];
+    mask &= ~(1 << last);
+    last = prior;
+  }
+  return order.reverse();
 }
 
 function formatClass(value) {
@@ -1415,6 +1544,7 @@ function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true
 
   const selectedIndex = Math.max(0, Math.min(activeIndex, itineraries.length - 1));
   const path = itineraries[selectedIndex];
+  const selectedColor = ROUTE_COLORS[selectedIndex] || ROUTE_COLORS[0];
   const { legs, totals } = routeMetrics(path);
   const hasTransfers = path.edges.some((edge) => edge.kind !== 'route');
   const start = points[0];
@@ -1430,7 +1560,7 @@ function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true
         const localLabel = metrics.localLinks
           ? t(metrics.localLinks === 1 ? 'route.localLinks.one' : 'route.localLinks.many', { count: metrics.localLinks })
           : '';
-        return `<button class="route-option ${index === selectedIndex ? 'active' : ''}" type="button" role="tab" aria-selected="${index === selectedIndex}" aria-label="${escapeHtml(t('route.showOption', { letter }))}" data-route-option="${index}">
+        return `<button class="route-option ${index === selectedIndex ? 'active' : ''}" style="--route-color:${ROUTE_COLORS[index] || ROUTE_COLORS[0]}" type="button" role="tab" aria-selected="${index === selectedIndex}" aria-label="${escapeHtml(t('route.showOption', { letter }))}" data-route-option="${index}">
           <span class="route-option-title"><strong>${escapeHtml(t('route.option', { letter }))}</strong>${index === 0 ? `<em>${escapeHtml(t('route.recommended'))}</em>` : ''}</span>
           <b>${escapeHtml(formatTravelTime(metrics.totals.minHours, metrics.totals.maxHours))}</b>
           <small>${escapeHtml(formatParsecs(metrics.totals.parsecs))} · ${escapeHtml(jumpLabel)}${localLabel ? ` · ${escapeHtml(localLabel)}` : ''}</small>
@@ -1439,6 +1569,7 @@ function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true
     </div>` : '';
 
   result.classList.remove('hidden');
+  result.style.setProperty('--route-color', selectedColor);
   result.innerHTML = `
     ${optionCards}
     <div class="route-itinerary-label">${escapeHtml(t('route.itinerary'))}</div>
@@ -1449,6 +1580,10 @@ function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true
       <div class="route-total"><span>${escapeHtml(t('route.totalTime', { class: formatClass(state.hyperdriveClass) }))}</span><strong>${formatTravelTime(totals.minHours, totals.maxHours)}</strong></div>
     </div>
     ${hasTransfers ? `<p class="route-warning">${escapeHtml(t('route.transferWarning'))}</p>` : ''}
+    <div class="route-result-actions">
+      <button type="button" data-copy-route>${escapeHtml(t('route.copy'))}</button>
+      <button type="button" data-copy-route-link>${escapeHtml(t('route.copyLink'))}</button>
+    </div>
     <div class="route-groups">${legs.map((leg, index) => {
       return `<div class="route-group ${leg.edge.kind === 'route' ? '' : 'auxiliary'}">
         <b>${index + 1}. ${escapeHtml(leg.a.name)} → ${escapeHtml(leg.b.name)}</b>
@@ -1459,12 +1594,40 @@ function renderRouteOptions(itineraries, points, activeIndex = 0, refocus = true
   result.querySelectorAll('[data-route-option]').forEach((button) => button.addEventListener('click', () => {
     selectRouteAlternative(Number(button.dataset.routeOption));
   }));
-  state.currentRoute = { itineraries, points, activeIndex: selectedIndex };
+  result.querySelectorAll('[data-route-option]').forEach((button) => {
+    const index = Number(button.dataset.routeOption);
+    button.addEventListener('pointerenter', () => previewRouteAlternative(index));
+    button.addEventListener('pointerleave', clearRoutePreview);
+    button.addEventListener('focus', () => previewRouteAlternative(index));
+    button.addEventListener('blur', clearRoutePreview);
+  });
+  result.querySelector('[data-copy-route]')?.addEventListener('click', copyCurrentRoute);
+  result.querySelector('[data-copy-route-link]')?.addEventListener('click', copyRouteLink);
+  state.currentRoute = { itineraries, points, activeIndex: selectedIndex, criterion: state.routeCriterion };
+  state.previewRouteIndex = null;
   state.highlightedPath = path;
+  state.highlightedRouteIndex = selectedIndex;
   state.routeFrom = start;
   state.routeTo = end;
+  syncUrlState();
   if (refocus) fitPath(path.nodes);
   else requestDraw();
+}
+
+function previewRouteAlternative(index) {
+  if (!state.currentRoute?.itineraries[index]) return;
+  state.previewRouteIndex = index;
+  state.highlightedPath = state.currentRoute.itineraries[index];
+  state.highlightedRouteIndex = index;
+  requestDraw();
+}
+
+function clearRoutePreview() {
+  if (!state.currentRoute || state.previewRouteIndex === null) return;
+  state.previewRouteIndex = null;
+  state.highlightedPath = state.currentRoute.itineraries[state.currentRoute.activeIndex];
+  state.highlightedRouteIndex = state.currentRoute.activeIndex;
+  requestDraw();
 }
 
 function selectRouteAlternative(index) {
@@ -1472,7 +1635,71 @@ function selectRouteAlternative(index) {
   renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, index, true);
 }
 
-function calculateRoute() {
+function currentRouteText() {
+  if (!state.currentRoute) return '';
+  const { itineraries, points, activeIndex } = state.currentRoute;
+  const path = itineraries[activeIndex];
+  const { legs, totals } = routeMetrics(path);
+  const jumpLabel = t(path.edges.length === 1 ? 'route.jumps.one' : 'route.jumps.many', { count: path.edges.length });
+  const itinerary = points.map((point, index) => `${routeLetter(index)}  ${point.name}`).join('  ›  ');
+  const lines = [
+    t('route.itinerary').toLocaleUpperCase(state.locale),
+    itinerary,
+    '',
+    `${points[0].name} → ${points[points.length - 1].name}    ${jumpLabel}`,
+    `${t('route.totalDistance').toLocaleUpperCase(state.locale)}: ${formatParsecs(totals.parsecs)}`,
+    `${t('route.totalTime', { class: formatClass(state.hyperdriveClass) }).toLocaleUpperCase(state.locale)}: ${formatTravelTime(totals.minHours, totals.maxHours)}`
+  ];
+  if (path.edges.some((edge) => edge.kind !== 'route')) lines.push('', t('route.transferWarning'));
+  legs.forEach((leg, index) => {
+    lines.push(
+      '',
+      `${index + 1}. ${leg.a.name} → ${leg.b.name}`,
+      `${routeNameLabel(leg.edge.route)} · ${travelProfileLabel(leg.profile)}`,
+      `${formatParsecs(leg.parsecs)} · ${formatLightYears(leg.lightYears)} · ${formatTravelTime(leg.minHours, leg.maxHours)}`
+    );
+  });
+  return lines.join('\n');
+}
+
+async function copyText(text, successKey) {
+  try {
+    let copied = false;
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch { /* Fall back to a temporary text field below. */ }
+    }
+    if (!copied) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      copied = document.execCommand('copy');
+      textarea.remove();
+      if (!copied) throw new Error('copy failed');
+    }
+    showToast(t(successKey));
+  } catch (error) {
+    console.warn('Copy failed:', error);
+    showToast(t('route.copyFailed'));
+  }
+}
+
+function copyCurrentRoute() {
+  const text = currentRouteText();
+  if (text) copyText(text, 'route.copied');
+}
+
+function copyRouteLink() {
+  syncUrlState();
+  copyText(window.location.href, 'route.linkCopied');
+}
+
+function calculateRoute({ preferredIndex = 0, refocus = true } = {}) {
   const start = resolveInput($('#routeFrom'));
   const end = resolveInput($('#routeTo'));
   if (!start || !end) {
@@ -1501,7 +1728,28 @@ function calculateRoute() {
   }
   state.routeFrom = start;
   state.routeTo = end;
-  renderRouteOptions(kBestItineraries(points), points);
+  renderRouteOptions(kBestItineraries(points, MAX_ROUTE_OPTIONS, state.routeCriterion), points, preferredIndex, refocus);
+}
+
+function optimizeRouteStops() {
+  const start = resolveInput($('#routeFrom'));
+  const end = resolveInput($('#routeTo'));
+  syncWaypointInputs();
+  const waypoints = state.routeWaypoints.map((waypoint) => waypoint.location);
+  if (!start || !end || waypoints.length < 2 || waypoints.some((location) => !location)) {
+    showToast(t('route.optimizeNeedsStops'));
+    return;
+  }
+  const order = optimizedWaypointOrder(start, waypoints, end, state.routeCriterion);
+  if (!order) {
+    showToast(t('route.noConnection'));
+    return;
+  }
+  state.routeWaypoints = order.map((index) => state.routeWaypoints[index]);
+  renderRouteStops();
+  invalidateRoute();
+  showToast(t('route.optimized'));
+  calculateRoute();
 }
 
 function waypointTarget(uid) {
@@ -1533,6 +1781,8 @@ function updateRouteEndpointLabels() {
   if (destinationMarker) destinationMarker.textContent = routeLetter(state.routeWaypoints.length + 1);
   const addButton = $('#addRouteStop');
   if (addButton) addButton.disabled = state.routeWaypoints.length >= MAX_ROUTE_STOPS;
+  const optimizeButton = $('#optimizeRouteStops');
+  if (optimizeButton) optimizeButton.disabled = state.routeWaypoints.length < 2;
   if (state.routePickTarget) {
     const endpoint = routeTargetLabel(state.routePickTarget);
     $('#routePickNote').textContent = t('route.pickActive', { endpoint });
@@ -1686,8 +1936,11 @@ function clearRoutePickTarget() {
 function invalidateRoute() {
   state.currentRoute = null;
   state.highlightedPath = null;
+  state.highlightedRouteIndex = 0;
+  state.previewRouteIndex = null;
   $('#routeResult').classList.add('hidden');
   $('#routeResult').innerHTML = '';
+  syncUrlState();
   requestDraw();
 }
 
@@ -1731,7 +1984,140 @@ function clearRoute() {
   $('#routeResult').classList.add('hidden');
   $('#routeResult').innerHTML = '';
   renderRouteStops();
+  syncUrlState();
   requestDraw();
+}
+
+function setActiveMode(mode, { sync = true } = {}) {
+  const routeMode = mode === 'route';
+  state.activeMode = routeMode ? 'route' : 'explore';
+  $$('.mode-button').forEach((button) => button.classList.toggle('active', button.dataset.mode === state.activeMode));
+  $('#explorePanel').classList.toggle('hidden', routeMode);
+  $('#routePanel').classList.toggle('hidden', !routeMode);
+  $('#detailCard').classList.toggle('hidden', routeMode);
+  if (!routeMode) clearRoutePickTarget();
+  if (sync) syncUrlState();
+  requestDraw();
+}
+
+function findSharedLocation(value) {
+  const target = normalize(value);
+  if (!target) return null;
+  return state.locations.find((location) => normalize(location.name) === target)
+    || state.locations.find((location) => location.aliases?.some((alias) => normalize(alias) === target))
+    || null;
+}
+
+function syncUrlState() {
+  if (!state.data || state.restoringUrl || !window.history?.replaceState) return;
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+  ['lang', 'mode', 'from', 'to', 'via', 'drive', 'criterion', 'route', 'layers'].forEach((key) => params.delete(key));
+  params.set('lang', state.locale);
+  params.set('layers', ['grid', 'regions', 'sectors', 'hyperroutes', 'planets'].filter((layer) => state.layerVisibility[layer]).join(','));
+  if (state.activeMode === 'route') {
+    params.set('mode', 'route');
+    if (state.routeFrom) params.set('from', state.routeFrom.name);
+    state.routeWaypoints.forEach((waypoint) => {
+      if (waypoint.location) params.append('via', waypoint.location.name);
+    });
+    if (state.routeTo) params.set('to', state.routeTo.name);
+    params.set('drive', String(state.hyperdriveClass));
+    params.set('criterion', state.routeCriterion);
+    if (state.currentRoute) params.set('route', routeLetter(state.currentRoute.activeIndex));
+  }
+  window.history.replaceState(null, '', url);
+}
+
+function restoreSharedState() {
+  const params = new URL(window.location.href).searchParams;
+  state.restoringUrl = true;
+  const visibleLayers = params.get('layers');
+  if (visibleLayers !== null) {
+    const enabled = new Set(visibleLayers.split(',').filter(Boolean));
+    for (const layer of ['grid', 'regions', 'sectors', 'hyperroutes', 'planets']) {
+      state.layerVisibility[layer] = enabled.has(layer);
+      const input = $(`[data-map-layer="${layer}"]`);
+      if (input) input.checked = state.layerVisibility[layer];
+    }
+  }
+  const criterion = params.get('criterion');
+  if (ROUTE_CRITERIA.has(criterion)) state.routeCriterion = criterion;
+  $('#routeCriterion').value = state.routeCriterion;
+  const drive = Number(params.get('drive'));
+  if (Number.isFinite(drive) && drive >= .5 && drive <= 5) state.hyperdriveClass = Math.round(drive * 2) / 2;
+  $('#hyperdriveClass').value = String(state.hyperdriveClass);
+  $('#hyperdriveValue').textContent = t('route.class', { value: formatClass(state.hyperdriveClass) });
+
+  const fromToken = params.get('from');
+  const toToken = params.get('to');
+  const from = findSharedLocation(fromToken);
+  const to = findSharedLocation(toToken);
+  state.routeFrom = from;
+  state.routeTo = to;
+  $('#routeFrom').value = from?.name || fromToken || '';
+  $('#routeTo').value = to?.name || toToken || '';
+  if (from) $('#routeFrom').dataset.locationId = from.id;
+  if (to) $('#routeTo').dataset.locationId = to.id;
+  state.routeWaypoints = params.getAll('via').slice(0, MAX_ROUTE_STOPS).map((name) => {
+    const location = findSharedLocation(name);
+    const waypoint = { uid: state.nextWaypointId, location, value: location?.name || name };
+    state.nextWaypointId += 1;
+    return waypoint;
+  });
+  renderRouteStops();
+  const hasSharedRoute = Boolean(fromToken || toToken || state.routeWaypoints.length);
+  setActiveMode(params.get('mode') === 'route' || hasSharedRoute ? 'route' : 'explore', { sync: false });
+  state.restoringUrl = false;
+  if (from && to && state.routeWaypoints.every((waypoint) => waypoint.location)) {
+    const optionToken = params.get('route') || 'A';
+    const preferredIndex = Math.max(0, Math.min(MAX_ROUTE_OPTIONS - 1, optionToken.toUpperCase().charCodeAt(0) - 65));
+    calculateRoute({ preferredIndex });
+  } else {
+    syncUrlState();
+  }
+}
+
+function renderSavedRoutes() {
+  const list = $('#savedRoutesList');
+  if (!list) return;
+  list.innerHTML = SAVED_ROUTES.map((savedRoute, index) => {
+    const route = `${savedRoute.from} → ${savedRoute.to}`;
+    const ship = t(`saved.ship.${savedRoute.shipKey}`);
+    return `<button class="saved-route-card" type="button" data-saved-route="${index}" aria-label="${escapeHtml(t('saved.load', { route, ship }))}">
+      <span><strong>${escapeHtml(route)}</strong><span>${escapeHtml(ship)}</span></span>
+      <b>${escapeHtml(t('route.class', { value: formatClass(savedRoute.hyperdriveClass) }))}</b>
+    </button>`;
+  }).join('');
+  list.querySelectorAll('[data-saved-route]').forEach((button) => button.addEventListener('click', () => loadSavedRoute(Number(button.dataset.savedRoute))));
+}
+
+function loadSavedRoute(index) {
+  const savedRoute = SAVED_ROUTES[index];
+  if (!savedRoute) return;
+  const from = findSharedLocation(savedRoute.from);
+  const to = findSharedLocation(savedRoute.to);
+  if (!from || !to) {
+    showToast(t('route.validEndpoints'));
+    return;
+  }
+  state.routeFrom = from;
+  state.routeTo = to;
+  state.routeWaypoints = [];
+  state.routeCriterion = 'fastest';
+  state.hyperdriveClass = savedRoute.hyperdriveClass;
+  $('#routeFrom').value = from.name;
+  $('#routeFrom').dataset.locationId = from.id;
+  $('#routeTo').value = to.name;
+  $('#routeTo').dataset.locationId = to.id;
+  $('#routeCriterion').value = state.routeCriterion;
+  $('#hyperdriveClass').value = String(state.hyperdriveClass);
+  $('#hyperdriveValue').textContent = t('route.class', { value: formatClass(state.hyperdriveClass) });
+  renderRouteStops();
+  setActiveMode('route', { sync: false });
+  $('#savedRoutesDialog').close();
+  invalidateRoute();
+  calculateRoute();
 }
 
 function populateRegions() {
@@ -1780,16 +2166,7 @@ function bindUI() {
     $('#planetSearch').focus();
   });
 
-  $$('.mode-button').forEach((button) => button.addEventListener('click', () => {
-    $$('.mode-button').forEach((item) => item.classList.toggle('active', item === button));
-    const routeMode = button.dataset.mode === 'route';
-    state.activeMode = routeMode ? 'route' : 'explore';
-    $('#explorePanel').classList.toggle('hidden', routeMode);
-    $('#routePanel').classList.toggle('hidden', !routeMode);
-    $('#detailCard').classList.toggle('hidden', routeMode);
-    if (!routeMode) clearRoutePickTarget();
-    requestDraw();
-  }));
+  $$('.mode-button').forEach((button) => button.addEventListener('click', () => setActiveMode(button.dataset.mode)));
 
   $$('#typeFilters .filter-chip').forEach((button) => button.addEventListener('click', () => {
     $$('#typeFilters .filter-chip').forEach((item) => item.classList.toggle('active', item === button));
@@ -1808,6 +2185,7 @@ function bindUI() {
       state.hovered = null;
       $('#mapTooltip').classList.remove('show');
     }
+    syncUrlState();
     requestDraw();
   }));
 
@@ -1840,6 +2218,7 @@ function bindUI() {
     invalidateRoute();
   });
   $('#addRouteStop').addEventListener('click', addRouteStop);
+  $('#optimizeRouteStops').addEventListener('click', optimizeRouteStops);
   $('#calculateRoute').addEventListener('click', calculateRoute);
   $('#clearRoute').addEventListener('click', clearRoute);
   $('#routeFrom').addEventListener('focus', () => setRoutePickTarget('from'));
@@ -1851,6 +2230,12 @@ function bindUI() {
     state.hyperdriveClass = Number(event.target.value);
     $('#hyperdriveValue').textContent = t('route.class', { value: formatClass(state.hyperdriveClass) });
     if (state.currentRoute) renderRouteOptions(state.currentRoute.itineraries, state.currentRoute.points, state.currentRoute.activeIndex, false);
+    else syncUrlState();
+  });
+  $('#routeCriterion').addEventListener('change', (event) => {
+    state.routeCriterion = ROUTE_CRITERIA.has(event.target.value) ? event.target.value : 'fastest';
+    if (state.currentRoute) calculateRoute({ refocus: false });
+    else invalidateRoute();
   });
   $('#routeFrom').addEventListener('keydown', (event) => { if (event.key === 'Enter') setTimeout(calculateRoute, 0); });
   $('#routeTo').addEventListener('keydown', (event) => { if (event.key === 'Enter') setTimeout(calculateRoute, 0); });
@@ -1868,6 +2253,9 @@ function bindUI() {
     state.currentWikiLocation = null;
     state.wikiRequestId += 1;
   });
+  $('#savedRoutesButton').addEventListener('click', () => $('#savedRoutesDialog').showModal());
+  $('#closeSavedRoutes').addEventListener('click', () => $('#savedRoutesDialog').close());
+  $('#savedRoutesDialog').addEventListener('click', (event) => { if (event.target === $('#savedRoutesDialog')) $('#savedRoutesDialog').close(); });
 
   $('#mobilePanelButton').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
   document.addEventListener('keydown', (event) => {
@@ -1965,9 +2353,12 @@ async function boot() {
       state.adjacency[edge.b].push({ to: edge.a, edgeIndex });
     });
     state.imageReady = true;
+    state.restoringUrl = true;
     bindUI();
     resizeCanvas();
     applyLocale(state.locale, false);
+    state.restoringUrl = false;
+    restoreSharedState();
     setTimeout(() => { if (!state.routePickTarget) $('#mapHint').style.opacity = '0'; }, 6200);
   } catch (error) {
     console.error(error);

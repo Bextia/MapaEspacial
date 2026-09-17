@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#07111f">
   <title>Atlas galáctico interactivo</title>
   <link rel="stylesheet" href="./styles.css">
+
 </head>
 <body>
   <div class="app-shell">
@@ -75,7 +76,14 @@
         </section>
 
         <section class="panel-section hidden" id="routePanel">
-          <div class="route-heading"><span data-i18n="route.eyebrow">TRAZADOR DE HIPERRUTAS</span><h2 data-i18n="route.title">Planifica un trayecto</h2><p data-i18n="route.description">Escribe un nombre o activa un campo y pulsa directamente un marcador del mapa.</p></div>
+          <div class="route-heading">
+            <div class="route-heading-top">
+              <span data-i18n="route.eyebrow">TRAZADOR DE HIPERRUTAS</span>
+              <button class="saved-routes-button" id="savedRoutesButton" type="button" data-i18n="saved.open">Rutas guardadas</button>
+            </div>
+            <h2 data-i18n="route.title">Planifica un trayecto</h2>
+            <p data-i18n="route.description">Escribe un nombre o activa un campo y pulsa directamente un marcador del mapa.</p>
+          </div>
           <label class="field-label" for="routeFrom" data-i18n="route.origin">Origen</label>
           <div class="search-wrap route-search" id="routeFromWrap" data-route-target="from">
             <span class="route-marker from">A</span>
@@ -86,6 +94,7 @@
           <div class="route-stops" id="routeStops" aria-live="polite"></div>
           <div class="route-stop-actions">
             <button class="add-stop-button" id="addRouteStop" type="button"><span aria-hidden="true">＋</span><span data-i18n="route.addStop">Añadir parada</span></button>
+            <button class="optimize-stops-button" id="optimizeRouteStops" type="button" disabled data-i18n="route.optimizeStops">Optimizar orden</button>
             <button class="swap-button" id="swapRoute" type="button" aria-label="Invertir el orden del trayecto" title="Invertir el orden del trayecto" data-i18n-aria-label="route.reverse" data-i18n-title="route.reverse">⇅</button>
           </div>
           <label class="field-label" for="routeTo" data-i18n="route.destination">Destino</label>
@@ -96,6 +105,16 @@
             <div class="suggestions" id="toSuggestions" role="listbox"></div>
           </div>
           <p class="route-pick-note" id="routePickNote" data-i18n="route.pickNote">Pulsa un campo para elegir ese punto en el mapa.</p>
+          <div class="route-criterion-control">
+            <label for="routeCriterion" data-i18n="route.criterionLabel">Prioridad de la ruta</label>
+            <select id="routeCriterion">
+              <option value="fastest" data-i18n="route.criterion.fastest">Más rápida</option>
+              <option value="shortest" data-i18n="route.criterion.shortest">Más corta</option>
+              <option value="fewerLocal" data-i18n="route.criterion.fewerLocal">Menos enlaces locales</option>
+              <option value="major" data-i18n="route.criterion.major">Priorizar rutas mayores</option>
+            </select>
+            <p data-i18n="route.criterionHelp">La opción más rápida usa el tiempo medio cuando existe un intervalo.</p>
+          </div>
           <div class="hyperdrive-control">
             <div class="hyperdrive-heading">
               <label for="hyperdriveClass" data-i18n="route.hyperdriveLabel">Clase del hipermotor</label>
@@ -156,7 +175,16 @@
     <div id="wikiModalContent" class="wiki-modal-content" aria-live="polite"></div>
   </dialog>
 
+  <dialog id="savedRoutesDialog" class="saved-routes-dialog">
+    <button class="dialog-close" id="closeSavedRoutes" type="button" aria-label="Cerrar" data-i18n-aria-label="common.close">×</button>
+    <span class="eyebrow" data-i18n="saved.eyebrow">ACCESOS RÁPIDOS</span>
+    <h2 data-i18n="saved.title">Rutas guardadas</h2>
+    <p data-i18n="saved.description">Selecciona un trayecto y una nave para cargarlo directamente en el planificador.</p>
+    <div class="saved-routes-list" id="savedRoutesList"></div>
+  </dialog>
+
   <div class="toast" id="toast" role="status"></div>
   <script type="module" src="./app.js"></script>
+
 </body>
 </html>
