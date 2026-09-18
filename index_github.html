@@ -1,71 +1,12 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <!-- Google Analytics 4 + Consent Mode -->
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-
-    gtag('consent', 'default', {
-      analytics_storage: 'denied',
-      ad_storage: 'denied',
-      ad_user_data: 'denied',
-      ad_personalization: 'denied'
-    });
-  </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-S14CSBR3K0"></script>
-  <script>
-    gtag('js', new Date());
-    gtag('config', 'G-S14CSBR3K0');
-
-    try {
-      const analyticsConsent = localStorage.getItem('bextia_analytics_consent');
-      if (analyticsConsent === 'granted') {
-        gtag('consent', 'update', { analytics_storage: 'granted' });
-      } else if (analyticsConsent === 'denied') {
-        gtag('consent', 'update', { analytics_storage: 'denied' });
-      }
-    } catch (e) {}
-  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07111f">
   <title>Atlas galáctico interactivo</title>
   <link rel="stylesheet" href="https://use.typekit.net/fyw7cqw.css">
   <link rel="stylesheet" href="./styles.css">
-  <style>
-    .analytics-consent {
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      z-index: 9999;
-      width: min(680px, calc(100% - 32px));
-      padding: 14px 16px;
-      border: 1px solid rgba(255,255,255,.2);
-      border-radius: 10px;
-      background: rgba(7, 17, 31, .97);
-      color: #fff;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      font: inherit;
-    }
-
-    .analytics-consent[hidden] { display: none; }
-    .analytics-consent p { margin: 0 0 10px; line-height: 1.45; }
-    .analytics-consent-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .analytics-consent button {
-      padding: 7px 12px;
-      border: 1px solid rgba(255,255,255,.3);
-      border-radius: 6px;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
-    }
-    .analytics-consent button:hover { background: rgba(255,255,255,.08); }
-    .analytics-consent .accept-analytics { background: #fff; color: #07111f; }
-    .analytics-consent .accept-analytics:hover { background: #e8edf3; }
-  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -198,9 +139,6 @@
         </section>
       </div>
       <footer class="sidebar-footer">
-        <span aria-label="Visit counter" style="display:inline-flex; align-items:center; margin-right:auto; text-align:left; line-height:0;">
-          <img src="https://hits.sh/bextia.com.svg?label=VISITS" alt="Visit counter" referrerpolicy="no-referrer" style="display:block; height:16px; width:auto;">
-        </span>
         <a class="footer-button" href="https://github.com/Bextia/MapaEspacial" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a class="footer-button" href="mailto:galaxymap.4u515@aleeas.com">@Bextia 2026</a>
         <button id="aboutButton" type="button" data-i18n="footer.about">Acerca de los datos</button>
@@ -246,40 +184,5 @@
 
   <div class="toast" id="toast" role="status"></div>
   <script type="module" src="./app.js"></script>
-
-  <div class="analytics-consent" id="analyticsConsent" hidden>
-    <p>Este sitio utiliza Google Analytics para conocer cómo se utiliza el atlas. Puedes aceptar o rechazar las cookies de analítica.</p>
-    <div class="analytics-consent-actions">
-      <button class="accept-analytics" id="acceptAnalytics" type="button">Aceptar</button>
-      <button id="rejectAnalytics" type="button">Rechazar</button>
-    </div>
-  </div>
-
-  <script>
-    (function () {
-      const banner = document.getElementById('analyticsConsent');
-      const acceptButton = document.getElementById('acceptAnalytics');
-      const rejectButton = document.getElementById('rejectAnalytics');
-
-      let savedChoice = null;
-      try {
-        savedChoice = localStorage.getItem('bextia_analytics_consent');
-      } catch (e) {}
-
-      if (!savedChoice) banner.hidden = false;
-
-      acceptButton.addEventListener('click', function () {
-        gtag('consent', 'update', { analytics_storage: 'granted' });
-        try { localStorage.setItem('bextia_analytics_consent', 'granted'); } catch (e) {}
-        banner.hidden = true;
-      });
-
-      rejectButton.addEventListener('click', function () {
-        gtag('consent', 'update', { analytics_storage: 'denied' });
-        try { localStorage.setItem('bextia_analytics_consent', 'denied'); } catch (e) {}
-        banner.hidden = true;
-      });
-    })();
-  </script>
 </body>
 </html>

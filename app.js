@@ -3,7 +3,19 @@ import { calculateLegMetrics, MAJOR_ROUTE_NAMES } from './route-math.js';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const MAP_SIZE = 4320;
-const MAP_FONT = '"Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow", Arial, sans-serif';
+const MAP_FONT = '"industry", "Arial Narrow", "Nimbus Sans Narrow", "Liberation Sans Narrow", Arial, sans-serif';
+const GRID = Object.freeze({
+  origin: 81,
+  cellSize: 189,
+  columns: 'ABCDEFGHIJKLMNOPQRSTUV',
+  rowCount: 22,
+  outerInset: 72,
+  outerRadius: 36,
+  innerRadius: 27,
+  labelInsetX: 10.7281,
+  labelTopBaseline: 27.2142,
+  labelBottomInset: 11.25
+});
 const MAX_ROUTE_STOPS = 8;
 const MAX_ROUTE_OPTIONS = 3;
 const CANDIDATE_PATHS_PER_LEG = 6;
@@ -397,13 +409,12 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const backgroundLayerSources = {
   background: './assets/galaxy-background.png',
   regions: './assets/galaxy-regions.png',
-  grid: './assets/galaxy-grid.png',
   sectors: './assets/galaxy-sectors.png',
   hyperroutes: './assets/galaxy-hyperroutes.png',
   planetsBackground: './assets/galaxy-planets-bg.png',
   legend: './assets/galaxy-legend.png'
 };
-const baseLayerOrder = ['background', 'regions', 'grid', 'sectors', 'hyperroutes'];
+const baseLayerOrder = ['background', 'regions', 'sectors', 'hyperroutes'];
 const backgroundLayerOrder = [...baseLayerOrder, 'planetsBackground', 'legend'];
 const backgroundLayerImages = Object.fromEntries(backgroundLayerOrder.map((key) => {
   const layerImage = new Image();
@@ -735,6 +746,66 @@ function drawLocatorCrosshair(context, occurrence, radius) {
   context.restore();
 }
 
+function roundedRectPath(context, x, y, width, height, radius) {
+  const right = x + width;
+  const bottom = y + height;
+  context.moveTo(x + radius, y);
+  context.lineTo(right - radius, y);
+  context.quadraticCurveTo(right, y, right, y + radius);
+  context.lineTo(right, bottom - radius);
+  context.quadraticCurveTo(right, bottom, right - radius, bottom);
+  context.lineTo(x + radius, bottom);
+  context.quadraticCurveTo(x, bottom, x, bottom - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+}
+
+function drawDynamicGrid(context) {
+  const innerSize = GRID.cellSize * GRID.columns.length;
+  const innerRight = GRID.origin + innerSize;
+  const innerBottom = GRID.origin + GRID.cellSize * GRID.rowCount;
+  const outerSize = MAP_SIZE - GRID.outerInset * 2;
+
+  context.save();
+  context.globalAlpha = .75;
+  context.strokeStyle = '#fff';
+  context.fillStyle = '#fff';
+  context.lineWidth = 1;
+  context.lineCap = 'butt';
+  context.lineJoin = 'miter';
+
+  context.beginPath();
+  roundedRectPath(context, GRID.outerInset, GRID.outerInset, outerSize, outerSize, GRID.outerRadius);
+  roundedRectPath(context, GRID.origin, GRID.origin, innerSize, innerBottom - GRID.origin, GRID.innerRadius);
+  for (let column = 1; column < GRID.columns.length; column += 1) {
+    const x = GRID.origin + column * GRID.cellSize;
+    context.moveTo(x, GRID.origin);
+    context.lineTo(x, innerBottom);
+  }
+  for (let row = 1; row < GRID.rowCount; row += 1) {
+    const y = GRID.origin + row * GRID.cellSize;
+    context.moveTo(GRID.origin, y);
+    context.lineTo(innerRight, y);
+  }
+  context.stroke();
+
+  context.font = `900 21px ${MAP_FONT}`;
+  context.textBaseline = 'alphabetic';
+  for (let row = 0; row < GRID.rowCount; row += 1) {
+    const cellTop = GRID.origin + row * GRID.cellSize;
+    const cellBottom = cellTop + GRID.cellSize;
+    for (let column = 0; column < GRID.columns.length; column += 1) {
+      const cellLeft = GRID.origin + column * GRID.cellSize;
+      const label = `${GRID.columns[column]}${row + 1}`;
+      context.textAlign = 'left';
+      context.fillText(label, cellLeft + GRID.labelInsetX, cellTop + GRID.labelTopBaseline);
+      context.textAlign = 'right';
+      context.fillText(label, cellLeft + GRID.cellSize - GRID.labelBottomInset, cellBottom - GRID.labelBottomInset);
+    }
+  }
+  context.restore();
+}
+
 function draw() {
   state.lastFrame = 0;
   const dpr = Number(canvas.dataset.dpr || 1);
@@ -748,9 +819,11 @@ function draw() {
   ctx.translate(state.view.x, state.view.y);
   ctx.scale(state.view.scale, state.view.scale);
   ctx.imageSmoothingEnabled = true;
-  for (const layer of baseLayerOrder) {
-    if (layer === 'background' || state.layerVisibility[layer]) ctx.drawImage(backgroundLayerImages[layer], 0, 0, MAP_SIZE, MAP_SIZE);
-  }
+  ctx.drawImage(backgroundLayerImages.background, 0, 0, MAP_SIZE, MAP_SIZE);
+  if (state.layerVisibility.regions) ctx.drawImage(backgroundLayerImages.regions, 0, 0, MAP_SIZE, MAP_SIZE);
+  if (state.layerVisibility.grid) drawDynamicGrid(ctx);
+  if (state.layerVisibility.sectors) ctx.drawImage(backgroundLayerImages.sectors, 0, 0, MAP_SIZE, MAP_SIZE);
+  if (state.layerVisibility.hyperroutes) ctx.drawImage(backgroundLayerImages.hyperroutes, 0, 0, MAP_SIZE, MAP_SIZE);
   if (state.layerVisibility.planets) ctx.drawImage(backgroundLayerImages.planetsBackground, 0, 0, MAP_SIZE, MAP_SIZE);
 
   if (state.highlightedPath) {
@@ -2353,6 +2426,7 @@ async function boot() {
       state.adjacency[edge.b].push({ to: edge.a, edgeIndex });
     });
     state.imageReady = true;
+    document.fonts?.ready.then(requestDraw).catch(() => {});
     state.restoringUrl = true;
     bindUI();
     resizeCanvas();
